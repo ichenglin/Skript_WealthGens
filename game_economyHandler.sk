@@ -1,0 +1,41 @@
+function game_economyHandler_playerSoldItems(player: offline player, amount: number, worth: number, multiplier: number = 1):
+	if {_amount} <= 0:
+		send "&cYou have nothing to sell!" to {_player}
+		stop
+	if {_multiplier} is 1:
+		set {_multiplierDisplay} to ""
+	else:
+		set {_multiplierDisplay} to " (&a%{_multiplier}%x Sell Multiplier&e)"
+	set {_sellWorthBoosterMultiplier} to game_boosterHandler_getPlayerBoosterValue({_player}, "SELL_WORTH")
+	if {_sellWorthBoosterMultiplier} is set:
+		set {_sellWorthBoosterMultiplierDisplay} to " (&a%{_sellWorthBoosterMultiplier}%x Sell Worth Booster&e)"
+		set {_worth} to ceil({_worth} * {_sellWorthBoosterMultiplier})
+	else:
+		set {_sellWorthBoosterMultiplierDisplay} to ""
+	send "&eYou sold &f%game_displayHandler_getNumberDigitDisplay({_amount})% &eitems worth &f$%game_displayHandler_getNumberDigitDisplay({_worth})%&e!%{_multiplierDisplay}%%{_sellWorthBoosterMultiplierDisplay}%" to {_player}
+	send title "&c&lItems Sold" with subtitle "&eYou sold &f&l%game_displayHandler_getNumberDigitDisplay({_amount})% &eitems worth &f&l$%game_displayHandler_getNumberDigitDisplay({_worth})%" to {_player} for 2 seconds with 0 tick fadein and 0 tick fadeout
+	game_playersHandler_setPlayerBalance({_player}, (game_playersHandler_getPlayerBalance({_player}) + {_worth}), false)
+	set {_sellExperienceBoosterMultiplier} to game_boosterHandler_getPlayerBoosterValue({_player}, "SELL_EXPERIENCE")
+	if {_sellExperienceBoosterMultiplier} is set:
+		set {_experienceWithSellExperienceBooster} to ceil({_amount} * {_sellExperienceBoosterMultiplier})
+		game_playersHandler_setPlayerExperience({_player}, (game_playersHandler_getPlayerExperience({_player}) + {_experienceWithSellExperienceBooster}), "Sell Experience Booster")
+	else:
+		game_playersHandler_setPlayerExperience({_player}, (game_playersHandler_getPlayerExperience({_player}) + {_amount}), "Sell")
+
+function game_economyHandler_sellLootInInventory(inventory: inventory, removeFromInventoryAfterSell: boolean = true) :: numbers:
+	set {_inventoryTotalSlots} to (inventory slots of {_inventory})
+	set {_soldItemsAmount} to 0
+	set {_soldItemsWorth} to 0
+	loop {_inventoryTotalSlots} times:
+		set {_loopInventorySlotNumber} to (loop-number - 1)
+		set {_loopInventorySlotItem} to (slot {_loopInventorySlotNumber} of {_inventory})
+		set {_itemData::*} to game_generatorsHandler_getItemData({_loopInventorySlotItem}, ("Type" and "Worth"))
+		if {_itemData::1} is "Loot":
+			set {_loopLootWorth} to ({_itemData::2} parsed as number)
+			set {_loopLootAmount} to (item amount of {_loopInventorySlotItem})
+			set {_loopInventorySlotWorth} to ({_loopLootWorth} * {_loopLootAmount})
+			add {_loopLootAmount} to {_soldItemsAmount}
+			add {_loopInventorySlotWorth} to {_soldItemsWorth}
+			if {_removeFromInventoryAfterSell} is true:
+				set slot {_loopInventorySlotNumber} of {_inventory} to air
+	return ({_soldItemsAmount} and {_soldItemsWorth})

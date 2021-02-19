@@ -1,0 +1,15 @@
+function game_sellwandHandler_wandSetDurability(player: offline player, hotbarSlot: number, wandItem: item, newDurability: number):
+	set {_wandItemData::*} to game_generatorsHandler_getItemData({_wandItem}, ("Multiplier" and "Durability"))
+	set {_wandDurabilitySplit::*} to {_wandItemData::2} split by "/"
+	set {_updatedWandItem} to game_sellwandHandler_getWand(({_wandItemData::1} parsed as number), ({_wandDurabilitySplit::2} parsed as number), {_newDurability})
+	set {_wandItem}'s lore to ({_updatedWandItem}'s lore)
+	set slot {_hotbarSlot} of {_player}'s inventory to {_wandItem}
+
+function game_sellwandHandler_sellInventoryWithMultiplier(targetInventory: inventory, multiplier: number) :: numbers:
+	set {_sellTargetInventoryData::*} to game_economyHandler_sellLootInInventory({_targetInventory})
+	set {_afterMultiplierInventoryWorth} to ceil({_sellTargetInventoryData::2} * {_multiplier})
+	return ({_sellTargetInventoryData::1} and {_afterMultiplierInventoryWorth})
+
+function game_sellwandHandler_getWand(multiplier: number, maxDurability: number, remainDurability: number) :: item:
+	set {_wandItem} to glowing BLAZE_ROD named "&eSell Wand (&a%{_multiplier}%x Multiplier&e)" with lore "||&eType: &fSell Wand||&eMultiplier: &f%{_multiplier}%||&f||&eDurability: &f%{_remainDurability}%/%{_maxDurability}%"
+	return {_wandItem}

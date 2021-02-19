@@ -1,0 +1,55 @@
+function game_playerTeleportRequestHandler_newRequest(player: offline player, target: offline player, requestType: text):
+
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_targetUUID} to ({_target}'s UUID)
+
+	set {_requestConfirmationId} to game_groupsHandler_system_getRandomConfirmationCode(16)
+	set {-game_playerTeleportRequestHandler::%{_playerUUID}%_%{_targetUUID}%_REQUEST_ID} to {_requestConfirmationId}
+	set {-game_playerTeleportRequestHandler::%{_playerUUID}%_%{_targetUUID}%_REQUEST_TYPE} to {_requestType}
+
+	if {_requestType} is "TELEPORT_TO":
+		send "%nl%&f%game_playersHandler_getPlayerDisplayName({_player})%&e have sended you a request to &fteleport to you&e!%nl%&eClick <command:/tpaccept %{_player}%>&6&l[HERE]<reset> &eor execute command &f/tpaccept %{_player}% &eto accept the request.%nl%" to {_target}
+		send "&eYou have sended a &fteleport to player &erequest to &f%game_playersHandler_getPlayerDisplayName({_target})%&e, they have &f5 minutes &eto accept the request." to {_player}
+	else if {_requestType} is "TELEPORT_HERE":
+		send "%nl%&f%game_playersHandler_getPlayerDisplayName({_player})%&e have sended you a request to &fteleport to them&e!%nl%&eClick <command:/tpaccept %{_player}%>&6&l[HERE]<reset> &eor execute command &f/tpaccept %{_player}% &eto accept the request.%nl%" to {_target}
+		send "&eYou have sended a &fteleport here &erequest to &f%game_playersHandler_getPlayerDisplayName({_target})%&e, they have &f5 minutes &eto accept the request." to {_player}
+
+	wait 5 minutes
+
+	if {-game_playerTeleportRequestHandler::%{_playerUUID}%_%{_targetUUID}%_REQUEST_ID} is not {_requestConfirmationId}:
+		stop
+
+	send "&eTeleport request from &f%game_playersHandler_getPlayerDisplayName({_player})% &ehas expired!" to {_target}
+	send "&eTeleport request sended to &f%game_playersHandler_getPlayerDisplayName({_target})% &ehas expired!" to {_player}
+	game_playerTeleportRequestHandler_removeRequest({_player}, {_target})
+
+function game_playerTeleportRequestHandler_acceptRequest(player: offline player, target: offline player):
+
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_targetUUID} to ({_target}'s UUID)
+
+	set {_requestType} to {-game_playerTeleportRequestHandler::%{_playerUUID}%_%{_targetUUID}%_REQUEST_TYPE}
+	game_playerTeleportRequestHandler_removeRequest({_player}, {_target})
+
+	if {_requestType} is "TELEPORT_TO":
+		teleport {_player} to {_target}
+	else:
+		teleport {_target} to {_player}
+
+	send "&eYou have accepted teleport request from &f%game_playersHandler_getPlayerDisplayName({_player})%&e!" to {_target}
+	send "&f%game_playersHandler_getPlayerDisplayName({_target})%&e has accepted the teleport request!" to {_player}
+
+function game_playerTeleportRequestHandler_removeRequest(player: offline player, target: offline player):
+
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_targetUUID} to ({_target}'s UUID)
+
+	delete {-game_playerTeleportRequestHandler::%{_playerUUID}%_%{_targetUUID}%_REQUEST_ID}
+	delete {-game_playerTeleportRequestHandler::%{_playerUUID}%_%{_targetUUID}%_REQUEST_TYPE}
+
+function game_playerTeleportRequestHandler_checkRequestExist(player: offline player, target: offline player) :: boolean:
+
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_targetUUID} to ({_target}'s UUID)
+
+	return (check [{-game_playerTeleportRequestHandler::%{_playerUUID}%_%{_targetUUID}%_REQUEST_TYPE} is set])

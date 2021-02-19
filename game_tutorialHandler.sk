@@ -1,0 +1,48 @@
+function game_tutorialHandler_playerPlayTutorial(player: offline player, tutorialData: texts, tutorialWorld: text):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {-game_tutorialHandler::PLAYER_IN_TUTORIAL_%{_playerUUID}%} to now
+	loop (amount of {_tutorialData::*}) times:
+		set {_sceneData::*} to {_tutorialData::%loop-number%} split by ":"
+		set {_sceneType} to mod(loop-number, 3)
+		if {_sceneType} is 1:
+			set {_screenMovementBeginLocation} to (location at (({_sceneData::1} parsed as number), ({_sceneData::2} parsed as number), ({_sceneData::3} parsed as number)) in world({_tutorialWorld}))
+			set {_screenMovementDestinationLocation} to (location at (({_sceneData::4} parsed as number), ({_sceneData::5} parsed as number), ({_sceneData::6} parsed as number)) in world({_tutorialWorld}))
+			game_tutorialHandler_playerPlayTutorial_screenMovement({_player}, {_screenMovementBeginLocation}, {_screenMovementDestinationLocation}, ({_sceneData::7} parsed as number), ({_sceneData::8} parsed as number), ({_sceneData::9} parsed as number))
+		else if {_sceneType} is 2:
+			game_tutorialHandler_playerPlayTutorial_screenText({_player}, {_sceneData::*})
+		else:
+			wait ("%{_sceneData::1}% seconds" parsed as time span)
+	set {_player}'s gamemode to survival
+	teleport {_player} to {-game_dataHandler::SERVER_SPAWN}
+	send "%nl%&6[Tutorial] &eUse command &a/tutorial &eif you wish to watch the tutorial again.%nl%" to {_player}
+	delete {-game_tutorialHandler::PLAYER_IN_TUTORIAL_%{_playerUUID}%}
+
+function game_tutorialHandler_playerPlayTutorial_screenMovement(player: offline player, beginLocation: location, destinationLocation: location, yaw: number, pitch: number, timeLengthSeconds: number, frameRate: number = 20): 
+	set {_totalFrames} to ({_timeLengthSeconds} * {_frameRate})
+	set {_frameLocation} to {_beginLocation}
+	set {_frameLocation}'s yaw to {_yaw}
+	set {_frameLocation}'s pitch to {_pitch}
+	spawn armor stand at {_frameLocation}
+	set {_sceneMovementMarker} to last spawned armor stand
+	add "{Invisible:1b,Invulnerable:1b,NoGravity:1b,Small:1b,Marker:1b}" to {_sceneMovementMarker}'s nbt
+	loop {_totalFrames} times:
+		set {_movementProgress} to (loop-number / {_totalFrames})
+		set {_frameLocation}'s x coords to (({_beginLocation}'s x coords) + (({_destinationLocation}'s x coords) - ({_beginLocation}'s x coords)) * {_movementProgress})
+		set {_frameLocation}'s y coords to (({_beginLocation}'s y coords) + (({_destinationLocation}'s y coords) - ({_beginLocation}'s y coords)) * {_movementProgress})
+		set {_frameLocation}'s z coords to (({_beginLocation}'s z coords) + (({_destinationLocation}'s z coords) - ({_beginLocation}'s z coords)) * {_movementProgress})
+		teleport {_sceneMovementMarker} to {_frameLocation}
+		set spectate target of {_player} to {_sceneMovementMarker}
+		wait ("%(20 / {_frameRate})% ticks" parsed as time span)
+	kill {_sceneMovementMarker}
+
+function game_tutorialHandler_playerPlayTutorial_screenText(player: offline player, textData: texts):
+	loop ((amount of {_textData::*}) / 4) times:
+		set {_loopDelayIndex} to (loop-number * 4 - 3)
+		set {_loopTextTimeLengthIndex} to (loop-number * 4 - 2)
+		set {_loopTitleIndex} to (loop-number * 4 - 1)
+		set {_loopSubtitleIndex} to (loop-number * 4)
+		wait ("%{_textData::%{_loopDelayIndex}%}% ticks" parsed as time span)
+		send title {_textData::%{_loopTitleIndex}%} with subtitle {_textData::%{_loopSubtitleIndex}%} to {_player} for ("%{_textData::%{_loopTextTimeLengthIndex}%}% ticks" parsed as time span) with 0 tick fadein and 0 tick fadeout
+		set {_chatDialog} to {_textData::%{_loopSubtitleIndex}%}
+		replace all "&l" with "" in {_chatDialog}
+		send "&6[Tutorial] %{_chatDialog}%" to {_player}

@@ -1,0 +1,73 @@
+function game_auctionHandler_playerStartAuction(player: offline player, item: item, startingBid: number, bidMinimumIncreasement: number, bidStartingCountdown: number = 60):
+	delete {-game_auctionHandler::*}
+	delete {-game_auctionHandler::PLAYER_BID_AMOUNT::*}
+	set {-game_auctionHandler::AUCTION_SELLER} to {_player}
+	set {-game_auctionHandler::AUCTION_ITEM} to {_item}
+	set {-game_auctionHandler::AUCTION_STARTING_BID} to {_startingBid}
+	set {-game_auctionHandler::AUCTION_BID_MINIMUM_INCREASEMENT} to {_bidMinimumIncreasement}
+	set {-game_auctionHandler::AUCTION_COUNT_DOWN} to ({_bidStartingCountdown} + 1)
+	set {-game_auctionHandler::AUCTION_ANTI_SNIPE_EXTEND_COUNT_DOWN_TIMES} to 0
+	set {_itemHoverDisplay} to "%{_item}'s name%%nl%%{_item}'s lore%"
+	replace all "||" with "%nl%" in {_itemHoverDisplay}
+	set {_auctionStartItemDisplay} to "<tooltip:%{_itemHoverDisplay}%>&f%item amount of {_item}%x %uncolored {_item}'s name% &7&o(Hover For Details)<reset>"
+	set {_auctionEndDisplay} to "<tooltip:%{_itemHoverDisplay}%>&f[%item amount of {_item}%x %uncolored {_item}'s name%]<reset>"
+	send "&b&m+-------&b [Player Auction] &b&m-------+%nl%&bSeller: &f%game_playersHandler_getPlayerDisplayName({_player})%%nl%&bItem: %{_auctionStartItemDisplay}%%nl%&bStarting Bid: &f$%game_displayHandler_getNumberDigitDisplay({_startingBid})%%nl%&bBid Minimum Increasement: &f$%game_displayHandler_getNumberDigitDisplay({_bidMinimumIncreasement})%%nl%%nl%&bUse &f/auction bid [amount] &bto bid.%nl%%nl%&b&m+-------&b [Player Auction] &b&m-------+" to all players
+	while (true):
+		if {-game_auctionHandler::AUCTION_COUNT_DOWN} <= 0:
+			exit 1 loop
+		remove 1 from {-game_auctionHandler::AUCTION_COUNT_DOWN}
+		set {_timeRemaining} to {-game_auctionHandler::AUCTION_COUNT_DOWN}
+		if {_timeRemaining} is 120 or 90 or 60 or 30 or 15 or 5 or 3 or 2 or 1:
+			if {_timeRemaining} is not {_bidStartingCountdown}:
+				send "&b[Auction] The bid is ending in &f%{_timeRemaining}% &bseconds!" to all players
+		wait 1 second
+	if {-game_auctionHandler::LAST_BID_PLAYER} is not set:
+		give {_item} to {-game_auctionHandler::AUCTION_SELLER}
+		send "&b[Auction] &f%game_playersHandler_getPlayerDisplayName({_player})%&b's auction of &f%{_auctionEndDisplay}% &bhas ended, no one has bid on the auction." to all players
+	else:
+		give {_item} to {-game_auctionHandler::LAST_BID_PLAYER}
+		game_playersHandler_setPlayerBalance({_player}, (game_playersHandler_getPlayerBalance({_player}) + {-game_auctionHandler::LAST_BID_AMOUNT}), true)
+		game_auctionHandler_returnAuctionMoney(({-game_auctionHandler::LAST_BID_PLAYER}'s UUID))
+		send "&b[Auction] &f%game_playersHandler_getPlayerDisplayName({-game_auctionHandler::LAST_BID_PLAYER})%&b has won the auction of &f%{_auctionEndDisplay}% &bwith &f$%game_displayHandler_getNumberDigitDisplay({-game_auctionHandler::LAST_BID_AMOUNT})%&b." to all players
+	delete {-game_auctionHandler::*}
+
+function game_auctionHandler_playerBid(player: offline player, bidAmount: number):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {-game_auctionHandler::LAST_BID_PLAYER} to {_player}
+	set {-game_auctionHandler::LAST_BID_AMOUNT} to {_bidAmount}
+	set {_playerPreviousBidAmount} to {-game_auctionHandler::PLAYER_BID_AMOUNT::%{_playerUUID}%}
+	if {_playerPreviousBidAmount} is not set:
+		set {_playerPreviousBidAmount} to 0
+	set {_toBeTakenAmount} to ({_bidAmount} - {_playerPreviousBidAmount})
+	set {-game_auctionHandler::PLAYER_BID_AMOUNT::%{_playerUUID}%} to {_bidAmount}
+	send "&b[Auction] &f%game_playersHandler_getPlayerDisplayName({_player})% &bhas bid &f$%game_displayHandler_getNumberDigitDisplay({_bidAmount})% &bon the auction!" to all players
+	game_playersHandler_setPlayerBalance({_player}, (game_playersHandler_getPlayerBalance({_player}) - {_toBeTakenAmount}), true)
+	if {-game_auctionHandler::AUCTION_COUNT_DOWN} <= 5:
+		if {-game_auctionHandler::AUCTION_ANTI_SNIPE_EXTEND_COUNT_DOWN_TIMES} >= 3:
+			stop
+		game_auctionHandler_extendCountdown(10)
+		add 1 to {-game_auctionHandler::AUCTION_ANTI_SNIPE_EXTEND_COUNT_DOWN_TIMES}
+		if {-game_auctionHandler::AUCTION_ANTI_SNIPE_EXTEND_COUNT_DOWN_TIMES} >= 3:
+			send "&b[Auction] &bAnti-Snipe system has reached maximum count down extend times of 3, the system has been disabled for future auction bids." to all players
+
+function game_auctionHandler_playerStopAuction(player: offline player):
+	send "&b[Auction] &f%game_playersHandler_getPlayerDisplayName({_player})% &bhas force stopped the current auction!" to all players
+	set {-game_auctionHandler::AUCTION_COUNT_DOWN} to 0
+
+function game_auctionHandler_extendCountdown(extendSeconds: number):
+	add {_extendSeconds} to {-game_auctionHandler::AUCTION_COUNT_DOWN}
+	send "&b[Auction] &bAnti-Snipe system has extended auction count down by &f%{_extendSeconds}% &bseconds." to all players
+
+function game_auctionHandler_returnAuctionMoney(auctionWinnerUUID: text):
+	loop {-game_auctionHandler::PLAYER_BID_AMOUNT::*}:
+		set {_loopPlayerUUID} to loop-index
+		set {_loopPlayer} to ({_loopPlayerUUID} parsed as offline player)
+		if {_loopPlayerUUID} is not {_auctionWinnerUUID}:
+			game_playersHandler_setPlayerBalance({_loopPlayer}, (game_playersHandler_getPlayerBalance({_loopPlayer}) + loop-value), true)
+	delete {-game_auctionHandler::PLAYER_BID_AMOUNT::*}
+
+function game_auctionHandler_getMinimumBidAmount() :: number:
+	if {-game_auctionHandler::LAST_BID_PLAYER} is not set:
+		return {-game_auctionHandler::AUCTION_STARTING_BID}
+	set {_allowedMinimumBid} to ({-game_auctionHandler::LAST_BID_AMOUNT} + {-game_auctionHandler::AUCTION_BID_MINIMUM_INCREASEMENT})
+	return {_allowedMinimumBid}

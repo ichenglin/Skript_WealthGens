@@ -1,0 +1,381 @@
+function game_playersHandler_getPlayerDisplayName(player: offline player, groupDisplay: boolean = false) :: text:
+	if {_groupDisplay} is true:
+		if game_groupsHandler_checkPlayerHaveGroup(({_player}'s UUID)) is true:
+			set {_groupDisplayText} to " &7&o(%game_groupsHandler_getPlayerGroupDisplayName(({_player}'s UUID), ""&o"")%&7&o)"
+	if {_groupDisplayText} is not set:
+		set {_groupDisplayText} to ""
+	return "%game_permissionHandler_getPlayerPrefix({_player})%%{_player}%%{_groupDisplayText}%"
+
+function game_playersHandler_getPlayerLevelDisplay(player: offline player) :: text:
+	set {_playerLevel} to game_playersHandler_getPlayerLevel({_player})
+	set {_playerLevelColor::*} to "&7" and "&a" and "&e" and "&c"
+	set {_playerLevelColorIndex} to (floor({_playerLevel} / 50) + 1)
+	if {_playerLevelColorIndex} > (amount of {_playerLevelColor::*}):
+		set {_playerLevelColorIndex} to (amount of {_playerLevelColor::*})
+	return "%{_playerLevelColor::%{_playerLevelColorIndex}%}%[%{_playerLevel}%]"
+
+function game_playersHandler_getPlayerBalance(player: offline player) :: number:
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerBalance} to (stringDatasAPI_getData({game_playersHandler_playerData::%{_playerUUID}%}, "BALANCE") parsed as number)
+	if {_playerBalance} is not set:
+		return 0
+	return {_playerBalance}
+
+function game_playersHandler_setPlayerBalance(player: offline player, newBalance: number, updateDisplay: boolean = true):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_oldBalance} to game_playersHandler_getPlayerBalance({_player})
+	if {_newBalance} < 0:
+		set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_removeData({game_playersHandler_playerData::%{_playerUUID}%}, "BALANCE")
+	else:
+		set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_setData("BALANCE", "%{_newBalance}%", {game_playersHandler_playerData::%{_playerUUID}%})
+		set {_balanceChange} to abs({_newBalance} - {_oldBalance})
+		if {_balanceChange} > 0:
+			set {_playerBalanceChangeDisplay} to (check [{_newBalance} > {_oldBalance}] ? "+%game_displayHandler_getNumberDigitDisplay({_balanceChange})%" : "-%game_displayHandler_getNumberDigitDisplay({_balanceChange})%")
+			send "&e%{_playerBalanceChangeDisplay}% Balance" to {_player}
+	if {_updateDisplay} is true:
+		game_playersHandler_updatePlayerTablist({_player})
+		game_playersHandler_updatePlayerSidebar({_player})
+
+function game_playersHandler_getPlayerTokens(player: offline player) :: number:
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerTokens} to (stringDatasAPI_getData({game_playersHandler_playerData::%{_playerUUID}%}, "TOKEN") parsed as number)
+	if {_playerTokens} is not set:
+		return 0
+	return {_playerTokens}
+
+function game_playersHandler_setPlayerTokens(player: offline player, newTokens: number, updateDisplay: boolean = true):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_oldTokens} to game_playersHandler_getPlayerTokens({_player})
+	if {_newTokens} < 0:
+		set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_removeData({game_playersHandler_playerData::%{_playerUUID}%}, "TOKEN")
+	else:
+		set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_setData("TOKEN", "%{_newTokens}%", {game_playersHandler_playerData::%{_playerUUID}%})
+		set {_tokensChange} to abs({_newTokens} - {_oldTokens})
+		if {_tokensChange} > 0:
+			set {_playerTokensChangeDisplay} to (check [{_newTokens} > {_oldTokens}] ? "&c+%game_displayHandler_getNumberDigitDisplay({_tokensChange})%" : "&c-%game_displayHandler_getNumberDigitDisplay({_tokensChange})%")
+			send "&c%{_playerTokensChangeDisplay}% Tokens" to {_player}
+	if {_updateDisplay} is true:
+		game_playersHandler_updatePlayerSidebar({_player})
+
+function game_playersHandler_getPlayerExperience(player: offline player) :: number:
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerExperience} to (stringDatasAPI_getData({game_playersHandler_playerData::%{_playerUUID}%}, "EXPERIENCE") parsed as number)
+	if {_playerExperience} is not set:
+		return 0
+	return {_playerExperience}
+
+function game_playersHandler_getPlayerExperienceProgress(player: offline player) :: numbers:
+	set {_playerLevel} to game_playersHandler_getPlayerLevel({_player})
+	set {_playerExperience} to game_playersHandler_getPlayerExperience({_player})
+	set {_experienceNeededForCurrentLevel} to game_dataHandler_getTotalExperienceNeededForLevel({_playerLevel})
+	set {_experienceNeededForNextLevel} to game_dataHandler_getTotalExperienceNeededForLevel(({_playerLevel} + 1))
+	return (({_playerExperience} - {_experienceNeededForCurrentLevel}) and ({_experienceNeededForNextLevel} - {_experienceNeededForCurrentLevel}))
+
+function game_playersHandler_setPlayerExperience(player: offline player, newExperience: number, displayReason: text = ""):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerGroupId} to game_groupsHandler_getPlayerGroupId({_playerUUID})
+	set {_oldExperience} to game_playersHandler_getPlayerExperience({_player})
+	set {_experienceChange} to ({_newExperience} - {_oldExperience})
+	if {_displayReason} is not "":
+		set {_experienceChangeDisplay} to (check [{_experienceChange} < 0] ? "-%game_displayHandler_getNumberDigitDisplay({_experienceChange})%" : "+%game_displayHandler_getNumberDigitDisplay({_experienceChange})%")
+		send "&d%{_experienceChangeDisplay}% Experience (%{_displayReason}%)" to {_player}
+#	game_groupsHandler_addExperienceToGroup({_playerGroupId}, {_experienceChange})
+	if {_newExperience} < 0:
+		set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_removeData({game_playersHandler_playerData::%{_playerUUID}%}, "EXPERIENCE")
+	else:
+		set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_setData("EXPERIENCE", "%{_newExperience}%", {game_playersHandler_playerData::%{_playerUUID}%})
+		set {_oldExperienceTokens} to floor({_oldExperience} / {-game_dataHandler::PLAYER_EXPERIENCE_PER_TOKEN})
+		set {_newExperienceTokens} to floor({_newExperience} / {-game_dataHandler::PLAYER_EXPERIENCE_PER_TOKEN})
+		if {_oldExperienceTokens} is not {_newExperienceTokens}:
+			set {_tokenRewardAmount} to ({_newExperienceTokens} - {_oldExperienceTokens})
+			game_playersHandler_setPlayerTokens({_player}, ((game_playersHandler_getPlayerTokens({_player})) + {_tokenRewardAmount}))
+	game_playersHandler_updatePlayerLevel({_player})
+	game_playersHandler_updatePlayerTablist({_player})
+	game_playersHandler_updatePlayerSidebar({_player})
+
+function game_playersHandler_getPlayerLevel(player: offline player) :: number:
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerLevel} to (stringDatasAPI_getData({game_playersHandler_playerData::%{_playerUUID}%}, "LEVEL") parsed as number)
+	if {_playerLevel} is not set:
+		return 0
+	return {_playerLevel}
+
+function game_playersHandler_updatePlayerLevel(player: offline player):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerLevel} to game_playersHandler_getPlayerLevel({_player})
+	set {_playerExperience} to game_playersHandler_getPlayerExperience({_player})
+	while (true):
+		if {_playerExperience} > game_dataHandler_getTotalExperienceNeededForLevel(({_playerLevel} + 1)):
+			add 1 to {_playerLevel}
+			if {_player} is online:
+				send "&bYou have level up to &fLevel %{_playerLevel}%&b!" to {_player}
+				if {-game_dataHandler::PLAYER_LEVEL_REWARD_%{_playerLevel}%} is set:
+					give game_crateHandler_playerOpenCrate_getRewardItem({_player}, {-game_dataHandler::PLAYER_LEVEL_REWARD_%{_playerLevel}%}, false, true) to {_player}
+				else:
+					game_playersHandler_setPlayerTokens({_player}, (game_playersHandler_getPlayerTokens({_player}) + 1))
+		else:
+			exit 1 loop
+	set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_setData("LEVEL", "%{_playerLevel}%", {game_playersHandler_playerData::%{_playerUUID}%})
+
+function game_playersHandler_getPlayerUpgradableRank(player: offline player) :: number:
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerUpgradableRank} to (stringDatasAPI_getData({game_playersHandler_playerData::%{_playerUUID}%}, "UPGRADABLE_RANK") parsed as number)
+	if {_playerUpgradableRank} is not set:
+		return 0
+	return {_playerUpgradableRank}
+
+function game_playersHandler_setPlayerUpgradableRank(player: offline player, newUpgradableRank: number):
+	set {_playerUUID} to ({_player}'s UUID)
+	if {_newUpgradableRank} < 0:
+		set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_removeData({game_playersHandler_playerData::%{_playerUUID}%}, "UPGRADABLE_RANK")
+	else:
+		set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_setData("UPGRADABLE_RANK", "%{_newUpgradableRank}%", {game_playersHandler_playerData::%{_playerUUID}%})
+	game_playersHandler_updatePlayerTablist({_player})
+	game_playersHandler_updatePlayerSidebar({_player})
+
+function game_playersHandler_getPlayerParticularRank(player: offline player) :: text:
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerParticularRank} to stringDatasAPI_getData({game_playersHandler_playerData::%{_playerUUID}%}, "PARTICULAR_RANK")
+	if {_playerParticularRank} is not set:
+		return "MEMBER"
+	return {_playerParticularRank}
+
+function game_playersHandler_addPlayerUnclaimedReward(player: offline player, rewardType: text):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_previousUnclaimedRewards} to (stringDatasAPI_getData({game_playersHandler_playerData::%{_playerUUID}%}, "UNCLAIMED_%{_rewardType}%_REWARDS") parsed as number)
+	if {_previousUnclaimedRewards} is not set:
+		set {_previousUnclaimedRewards} to 0
+	set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_setData("UNCLAIMED_%{_rewardType}%_REWARDS", "%({_previousUnclaimedRewards} + 1)%", {game_playersHandler_playerData::%{_playerUUID}%})
+
+function game_playersHandler_playerClaimUnclaimedReward(player: offline player, rewardType: text):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_previousUnclaimedRewards} to (stringDatasAPI_getData({game_playersHandler_playerData::%{_playerUUID}%}, "UNCLAIMED_%{_rewardType}%_REWARDS") parsed as number)
+	if {_previousUnclaimedRewards} is set:
+		set {_rewardItems} to ({_previousUnclaimedRewards} of game_crateHandler_playerOpenCrate_getRewardItem({_player}, {-game_dataHandler::%{_rewardType}%_REWARD}, false, true))
+		if {_player} doesn't have enough space for {_rewardItems}:
+			send "%nl%&cYour %{_rewardType} in lower case% rewards have been canceled due to inventory is full!%nl%&cRejoin the server with enough inventory slots to claim it.%nl%" to {_player}
+			stop
+		set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_removeData({game_playersHandler_playerData::%{_playerUUID}%}, "UNCLAIMED_%{_rewardType}%_REWARDS")
+		send "&bYou have received your unclaimed %{_rewardType} in lower case% rewards!" to {_player}
+		give {_rewardItems} to {_player}
+
+function game_playersHandler_setPlayerParticularRank(player: offline player, newParticularRankId: text, newParticularRankExpireSeconds: number = 0):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_setData("PARTICULAR_RANK", {_newParticularRankId}, {game_playersHandler_playerData::%{_playerUUID}%})
+	if {_newParticularRankExpireSeconds} > 0:
+		set {_expireUNIX} to unixAPI_dateToUnix(now)
+		add {_newParticularRankExpireSeconds} to {_expireUNIX}
+		set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_setData("PARTICULAR_RANK_EXPIRE", "%{_expireUNIX}%", {game_playersHandler_playerData::%{_playerUUID}%})
+	else:
+		set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_removeData({game_playersHandler_playerData::%{_playerUUID}%}, "PARTICULAR_RANK_EXPIRE")
+	game_playersHandler_updatePlayerTablist({_player})
+	game_playersHandler_updatePlayerSidebar({_player})
+
+function game_playersHandler_removePlayerParticularRank(player: offline player):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_removeData({game_playersHandler_playerData::%{_playerUUID}%}, "PARTICULAR_RANK")
+	set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_removeData({game_playersHandler_playerData::%{_playerUUID}%}, "PARTICULAR_RANK_EXPIRE")
+	game_playersHandler_updatePlayerTablist({_player})
+	game_playersHandler_updatePlayerSidebar({_player})
+
+function game_playersHandler_checkPlayerParticularRankExpire(player: offline player):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerParticularRankExpire} to (stringDatasAPI_getData({game_playersHandler_playerData::%{_playerUUID}%}, "PARTICULAR_RANK_EXPIRE") parsed as number)
+	if {_playerParticularRankExpire} is set:
+		if unixAPI_dateToUnix(now) >= {_playerParticularRankExpire}:
+			game_playersHandler_removePlayerParticularRank({_player})
+			if {_player} is online:
+				send "&bYour rank has expired!" to {_player}
+
+function game_playersHandler_getPlayerOwnedGenerators(player: offline player) :: number:
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerOwnedGenerators} to (stringDatasAPI_getData({game_generatorsHandler_playerData::%{_playerUUID}%}, "OWNED_GENERATORS_AMOUNT") parsed as number)
+	if {_playerOwnedGenerators} is set:
+		return {_playerOwnedGenerators}
+	return 0
+
+function game_playersHandler_getPlayerMaximumGenerators(player: offline player) :: number:
+	set {_playerBonusGeneratorsAmount} to game_permissionHandler_getPlayerPermission({_player}, "BONUS_GENERATORS")
+	return ({-game_dataHandler::PLAYER_DEFAULT_MAXIMUM_GENERATORS_AMOUNT} + {_playerBonusGeneratorsAmount})
+
+function game_playersHandler_getPlayerOwnedMachines(player: offline player) :: number:
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerOwnedMachines} to (stringDatasAPI_getData({game_machinesHandler_playerData::%{_playerUUID}%}, "OWNED_MACHINES_AMOUNT") parsed as number)
+	if {_playerOwnedMachines} is set:
+		return {_playerOwnedMachines}
+	return 0
+
+function game_playersHandler_getPlayerMaximumMachines(player: offline player) :: number:
+	set {_playerBonusMachinesAmount} to game_permissionHandler_getPlayerPermission({_player}, "BONUS_MACHINES")
+	return ({-game_dataHandler::PLAYER_DEFAULT_MAXIMUM_MACHINES_AMOUNT} + {_playerBonusMachinesAmount})
+
+function game_playersHandler_setPlayerLastOnline(player: offline player, lastOnlineTime: date):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_lastOnlineUNIX} to unixAPI_dateToUnix({_lastOnlineTime})
+	set {game_playersHandler_playerData::%{_playerUUID}%} to stringDatasAPI_setData("LAST_ONLINE", "%{_lastOnlineUNIX}%", {game_playersHandler_playerData::%{_playerUUID}%})
+
+function game_playersHandler_getPlayerLastOnline(player: offline player) :: number:
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_lastOnlineUNIX} to (stringDatasAPI_getData({game_playersHandler_playerData::%{_playerUUID}%}, "LAST_ONLINE") parsed as number)
+	return ((unixAPI_dateToUnix(now)) - {_lastOnlineUNIX})
+
+function game_playersHandler_removeItemFromPlayerInventory(player: offline player, item: item) :: boolean:
+	set {_playerCurrentHotbarSlot} to (current hotbar slot of {_player})
+	add {_playerCurrentHotbarSlot} to {_queuedSearchableInventorySlot::*}
+	loop 36 times:
+		set {_loopInventorySlot} to (loop-number - 1)
+		if {_loopInventorySlot} is not {_playerCurrentHotbarSlot}:
+			add {_loopInventorySlot} to {_queuedSearchableInventorySlot::*}
+	set {_targetItemFoundAmount} to 0
+	loop {_queuedSearchableInventorySlot::*}:
+		set {_loopInventorySlot} to loop-value
+		if (1 of slot {_loopInventorySlot} of {_player}'s inventory) is (1 of {_item}):
+			set {_loopInventorySlotFoundAmount} to (item amount of slot {_loopInventorySlot} of {_player}'s inventory)
+			add {_loopInventorySlot} to {_targetItemFoundInventorySlots::*}
+			add {_loopInventorySlotFoundAmount} to {_targetItemFoundAmount}
+			if {_targetItemFoundAmount} >= (item amount of {_item}):
+				exit 1 loop
+	if {_targetItemFoundAmount} < (item amount of {_item}):
+		return false
+	set {_targetItemFoundSlotsAmount} to (amount of {_targetItemFoundInventorySlots::*})
+	loop ({_targetItemFoundSlotsAmount} - 1) times:
+		set {_loopInventorySlot} to {_targetItemFoundInventorySlots::%loop-number%}
+		set slot {_loopInventorySlot} of {_player}'s inventory to air
+	set {_lasttargetItemFoundSlotRemainItemAmount} to ({_targetItemFoundAmount} - (item amount of {_item}))
+	set slot {_targetItemFoundInventorySlots::%{_targetItemFoundSlotsAmount}%} of {_player}'s inventory to ({_lasttargetItemFoundSlotRemainItemAmount} of {_item})
+	return true
+		
+
+function game_playersHandler_updateTopBalanceList():
+	set {_null} to text from url "URL_REMOVED/wealthgensLeaderboard/json-upload.php?action=CLEAR"
+	set {_loopNumber} to 0
+	loop {game_playersHandler_playerData::*}:
+		add 1 to {_loopNumber}
+		set {_loopPlayer} to (loop-index parsed as offline player)
+		set {_loopPlayerBalance} to game_playersHandler_getPlayerBalance({_loopPlayer})
+		set {_playerBalancePart::%loop-index%} to {_loopPlayerBalance}
+		if floor({_loopNumber} / 10) is ({_loopNumber} / 10):
+			set {_playerBalancePartJson} to json form of {_playerBalancePart::*}
+			set {_null} to text from url "URL_REMOVED/wealthgensLeaderboard/json-upload.php?action=UPLOAD&json-text=%{_playerBalancePartJson}%"
+			delete {_playerBalancePart::*}
+			wait 10 ticks
+	if {_playerBalancePart::*} is set:
+		set {_playerBalancePartJson} to json form of {_playerBalancePart::*}
+		set {_null} to text from url "URL_REMOVED/wealthgensLeaderboard/json-upload.php?action=UPLOAD&json-text=%{_playerBalancePartJson}%"
+		wait 10 ticks
+	set {_sortedPlayerBalanceJsonText} to text from url "URL_REMOVED/wealthgensLeaderboard/leaderboard.php"
+#	send {_sortedPlayerBalanceJsonText} to all players
+	map json {_sortedPlayerBalanceJsonText} to {game_playersHandler_balanceTopList::*}
+	game_playersHandler_updateTopBalanceList_leaderboardDisplay()
+	send "&bTop balance leaderboard has been updated!" to all players
+
+function game_playersHandler_updateTopBalanceList_leaderboardDisplay():
+	loop 10 times:
+		if {game_playersHandler_balanceTopList::%loop-number%} is set:
+			set {_loopPlayerUUID} to {game_playersHandler_balanceTopList::%loop-number%}
+			set {_loopPlayer} to ({_loopPlayerUUID} parsed as offline player)
+			set {_loopPlayerBalance} to game_playersHandler_getPlayerBalance({_loopPlayer})
+			add "&b##%loop-number% &f%game_playersHandler_getPlayerDisplayName({_loopPlayer}, true)% &b► &f$%game_displayHandler_getNumberDigitDisplay({_loopPlayerBalance})% &b(&f$%game_displayHandler_getNumberSimplifiedDisplay({_loopPlayerBalance})%&b)" to {_leaderboardDisplay::*}
+		else:
+			add "&b##%loop-number% &fNone &b► &f$0 &b(&f$0&b)" to {_leaderboardDisplay::*}
+	game_leaderboardHandler_updateLeaderboard("BALANCE_LEADERBOARD", "Top Balance Players", {_leaderboardDisplay::*})
+
+function game_playersHandler_updatePlayerTablist(player: offline player):
+	if {_player} is not online:
+		stop
+	set ("%{_player}%" parsed as player)'s tablist name to "&f %game_playersHandler_getPlayerLevelDisplay({_player})% &e%game_playersHandler_getPlayerDisplayName({_player}, true)% &6($%game_displayHandler_getNumberSimplifiedDisplay(game_playersHandler_getPlayerBalance({_player}))%) &f"
+
+function game_playersHandler_updatePlayerSidebar_playersInPlot(plot: text):
+	loop all players:
+		set {_loopPlayerLocationPlot} to game_plotsHandler_checkLocationInPlot(game_plotsHandler_newPlotSettings({-game_dataHandler::PLOT_SETTING_ROAD_SIZE}, {-game_dataHandler::PLOT_SETTING_PLOT_SIZE}), (loop-player's location))
+		if {_loopPlayerLocationPlot} is {_plot}:
+			game_playersHandler_updatePlayerSidebar(loop-player)
+
+function game_playersHandler_updatePlayerSidebar(player: offline player):
+
+	set {_sidebarId} to "SIDEBAR_%{_player}'s UUID%"
+
+#	add "&7✦ %now%" to {_sidebarLinesDisplay::*}
+	add "" to {_sidebarLinesDisplay::*}
+	set {_playerRankDisplay} to game_permissionHandler_getPlayerRankDisplay({_player})
+	add "&a۞ &fPlayer: &a%{_player}%" to {_sidebarLinesDisplay::*}
+	add "&a✎ &fRank: %{_playerRankDisplay}%" to {_sidebarLinesDisplay::*}
+	add "" to {_sidebarLinesDisplay::*}
+	set {_playerLevel} to game_playersHandler_getPlayerLevel({_player})
+	set {_playerLevelProgressData::*} to game_playersHandler_getPlayerExperienceProgress({_player})
+	set {_playerLevelProgressPercentage} to ({_playerLevelProgressData::1} / {_playerLevelProgressData::2} * 100)
+	add "&6✣ &fLevel: &6%{_playerLevel}% &f(&6%floor({_playerLevelProgressPercentage})%%%&f)" to {_sidebarLinesDisplay::*}
+#	add "&a✣ &fLevel: &a0" to {_sidebarLinesDisplay::*}
+#	add "&a   &fProgress: &a0%%" to {_sidebarLinesDisplay::*}
+	add "" to {_sidebarLinesDisplay::*}
+	set {_playerBalance} to game_playersHandler_getPlayerBalance({_player})
+	set {_playerTokens} to game_playersHandler_getPlayerTokens({_player})
+	add "&e⛃ &fBalance: &r&e%game_displayHandler_getNumberDigitDisplay({_playerBalance})%&r" to {_sidebarLinesDisplay::*}
+	add "&c⛂ &fTokens: &c%game_displayHandler_getNumberDigitDisplay({_playerTokens})%" to {_sidebarLinesDisplay::*}
+	add "" to {_sidebarLinesDisplay::*}
+	set {_playerOwnedGenerators} to game_playersHandler_getPlayerOwnedGenerators({_player})
+	set {_playerMaximumGenerators} to game_playersHandler_getPlayerMaximumGenerators({_player})
+	set {_playerOwnedMachines} to game_playersHandler_getPlayerOwnedMachines({_player})
+	set {_playerMaximumMachines} to game_playersHandler_getPlayerMaximumMachines({_player})
+	add "&a❁ &fYour Generators: &a%{_playerOwnedGenerators}%/%{_playerMaximumGenerators}%" to {_sidebarLinesDisplay::*}
+	add "&a☣ &fYour Machines: &a%{_playerOwnedMachines}%/%{_playerMaximumMachines}%" to {_sidebarLinesDisplay::*}
+	add "" to {_sidebarLinesDisplay::*}
+	set {_playerPlot} to game_plotsHandler_checkLocationInPlot(game_plotsHandler_newPlotSettings({-game_dataHandler::PLOT_SETTING_ROAD_SIZE}, {-game_dataHandler::PLOT_SETTING_PLOT_SIZE}), ({_player}'s location))
+#	set {_playerPlot} to (check [{_playerPlot} is "ON_ROAD"] ? "&6Road" : {_playerPlot})
+	set {_playerPlotMaximumGenerators} to game_generatorsHandler_generators_plotData_getPlotMaximumGeneratorsAmount({_playerPlot})
+	set {_playerPlotGenerators} to game_generatorsHandler_generators_plotData_getPlotGeneratorsAmount({_playerPlot})
+	set {_playerPlotMaximumMachines} to game_machinesHandler_machines_plotData_getPlotMaximumMachinesAmount({_playerPlot})
+	set {_playerPlotMachines} to game_machinesHandler_machines_plotData_getPlotMachinesAmount({_playerPlot})
+	add "&a❁ &fPlot Generators: &a%{_playerPlotGenerators}%/%{_playerPlotMaximumGenerators}%" to {_sidebarLinesDisplay::*}
+	add "&a☣ &fPlot Machines: &a%{_playerPlotMachines}%/%{_playerPlotMaximumMachines}%" to {_sidebarLinesDisplay::*}
+	add "" to {_sidebarLinesDisplay::*}
+
+	set {_sidebarLinesDisplay::*} to game_playersHandler_updatePlayerSidebar_replaceDuplicateText({_sidebarLinesDisplay::*})
+	set {_sidebarLines} to (amount of {_sidebarLinesDisplay::*})
+	if {-game_playersHandler::SIDEBAR_%{_sidebarId}%_REGISTERED_LINES} is not {_sidebarLines}:
+		game_playersHandler_updatePlayerSidebar_linesSetup({_player}, {_sidebarId}, {_sidebarLinesDisplay::*})
+	set {-game_playersHandler::SIDEBAR_%{_sidebarId}%_REGISTERED_LINES} to {_sidebarLines}
+	game_playersHandler_updatePlayerSidebar_textSetup({_sidebarId}, {_sidebarLinesDisplay::*})
+
+function game_playersHandler_updatePlayerSidebar_linesSetup(player: offline player, sidebarId: text, sidebarLinesDisplay: texts):
+	set {_sidebarLines} to (amount of {_sidebarLinesDisplay::*})
+	set {_sidebarLines} to (check [{_sidebarLines} <= 15] ? {_sidebarLines} : 15)
+	delete stylish scoreboard {_sidebarId}
+	create stylish scoreboard named {_sidebarId}
+	set title of stylish scoreboard {_sidebarID} to "&6&lWealthGens"
+	loop {_sidebarLines} times:
+		set {_loopSidebarLine} to ({_sidebarLines} + 1 - loop-number)
+		create a new id based score "%{_sidebarId}%_LINE_%{_loopSidebarLine}%" with text "LINE_%{_loopSidebarLine}%" slot {_loopSidebarLine} for stylish scoreboard {_sidebarId}
+	set {_player}'s stylish scoreboard to {_sidebarId}
+
+function game_playersHandler_updatePlayerSidebar_textSetup(sidebarId: text, sidebarLinesDisplay: texts):
+	set {_sidebarLines} to (amount of {_sidebarLinesDisplay::*})
+	set {_sidebarLines} to (check [{_sidebarLines} <= 15] ? {_sidebarLines} : 15)
+	loop {_sidebarLines} times:
+		set {_loopSidebarLine} to ({_sidebarLines} + 1 - loop-number)
+		set text of id "%{_sidebarId}%_LINE_%{_loopSidebarLine}%" to {_sidebarLinesDisplay::%loop-number%}
+		if floor(loop-number / 3) is (loop-number / 3):
+			wait 1 tick
+
+function game_playersHandler_updatePlayerSidebar_replaceDuplicateText(sidebarLinesDisplay: texts) :: texts:
+	loop {_sidebarLinesDisplay::*}:
+		while (true):
+			set {_loopLineText} to {_sidebarLinesDisplay::%loop-index%}
+			if {_textUsed::%{_loopLineText}%} is set:
+				set {_sidebarLinesDisplay::%loop-index%} to "%{_loopLineText}%&f"
+			else:
+				set {_textUsed::%{_loopLineText}%} to true
+				exit 1 loop
+	return {_sidebarLinesDisplay::*}
+
+function game_playersHandler_removePlayerSidebar(player: offline player):
+	set {_sidebarId} to "SIDEBAR_%{_player}'s UUID%"
+	delete {-game_playersHandler::SIDEBAR_%{_sidebarId}%_REGISTERED_LINES}
+
+function game_playersHandler_playSoundToPlayers(players: players, sound: text, pitch: number = 1):
+	loop {_players::*}:
+		set {_loopPlayer} to loop-value
+		play sound {_sound} with volume 99999 and pitch {_pitch} at ({_loopPlayer}'s location) for {_loopPlayer}
+
+function game_playersHandler_getTokenVoucherItem(voucherTokensWorth: number) :: item:
+	return (glowing NETHER_STAR named "&e%{_voucherTokensWorth}% Token Voucher" with lore "||&eType: &fToken Voucher||&f||&eTokens: &f%{_voucherTokensWorth}%")

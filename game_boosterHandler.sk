@@ -1,0 +1,91 @@
+on script load:
+	wait 10 ticks
+	game_boosterHandler_reloadAllPlayersBooster()
+
+function game_boosterHandler_applyPlayerBooster(player: offline player, boosterType: text, boosterValue: number, boosterTimeLengthSeconds: number):
+	set {_playerUUID} to ({_player}'s UUID)
+	if {game_boosterHandler::PLAYER_BOOSTER_ACTIVE_%{_playerUUID}%} is set:
+		game_boosterHandler_pausePlayerBooster({_player})
+	if game_boosterHandler_checkPlayerHaveBooster({_player}) is true:
+		game_boosterHandler_removePlayerBooster({_player})
+		send "&cYour previous booster has been replaced by new booster!" to {_player}
+#	if game_boosterHandler_checkPlayerHaveBooster({_player}) is true:
+#		set {_oldBoosterType} to stringDatasAPI_getData({game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%}, "BOOSTER_TYPE")
+#		if {_oldBoosterType} is not {_boosterType}:
+#			game_boosterHandler_removePlayerBooster({_player})
+#			send "&cYour previous booster has been replaced by new booster!" to {_player}
+	set {_newBoosterRaw} to stringDatasAPI_setData("BOOSTER_TYPE", {_boosterType})
+	set {_newBoosterRaw} to stringDatasAPI_setData("BOOSTER_VALUE", "%{_boosterValue}%", {_newBoosterRaw})
+	if game_boosterHandler_checkPlayerHaveBooster({_player}) is true:
+		add game_boosterHandler_getPlayerBoosterRemainTimeLength({_player}) to {_boosterTimeLengthSeconds}
+		send "&cYour previous booster time length has been extended by new booster!" to {_player}
+	set {_newBoosterRaw} to stringDatasAPI_setData("BOOSTER_REMAIN_TIME_LENGTH", "%{_boosterTimeLengthSeconds}%", {_newBoosterRaw})
+	set {_newBoosterRaw} to stringDatasAPI_setData("BOOSTER_RECEIVE_TIME", "%unixAPI_dateToUnix(now)%", {_newBoosterRaw})
+	set {game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%} to {_newBoosterRaw}
+	game_boosterHandler_activatePlayerBooster({_player})
+
+function game_boosterHandler_removePlayerBooster(player: offline player):
+	set {_playerUUID} to ({_player}'s UUID)
+	if {game_boosterHandler::PLAYER_BOOSTER_ACTIVE_%{_playerUUID}%} is set:
+		game_boosterHandler_pausePlayerBooster({_player})
+	delete {game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%}
+
+function game_boosterHandler_activatePlayerBooster(player: offline player):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%} to stringDatasAPI_setData("BOOSTER_BEGIN_TIME", "%unixAPI_dateToUnix(now)%", {game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%})
+	set {_activeBoosterDisplayId} to unixAPI_dateToUnix(now)
+	set {game_boosterHandler::PLAYER_BOOSTER_ACTIVE_%{_playerUUID}%} to {_activeBoosterDisplayId}
+	set {_boosterType} to stringDatasAPI_getData({game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%}, "BOOSTER_TYPE")
+	set {_boosterName} to {_boosterType}
+	replace all "_" with " " in {_boosterName}
+	set {_boosterName} to game_displayHandler_uppercaseLeadingLetter({_boosterName})
+	set {_boosterValue} to stringDatasAPI_getData({game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%}, "BOOSTER_VALUE")
+	set {_boosterRemainTimeLength} to game_boosterHandler_getPlayerBoosterRemainTimeLength({_player})
+	set {-game_boosterHandler::ACTIVE_BOOSTER_STATS_%{_playerUUID}%::BOOSTER_TYPE} to {_boosterType}
+	set {-game_boosterHandler::ACTIVE_BOOSTER_STATS_%{_playerUUID}%::BOOSTER_VALUE} to ({_boosterValue} parsed as number)
+	while (true):
+		if {game_boosterHandler::PLAYER_BOOSTER_ACTIVE_%{_playerUUID}%} is not {_activeBoosterDisplayId}:
+			if {game_boosterHandler::PLAYER_BOOSTER_ACTIVE_%{_playerUUID}%} is not set:
+				send action bar "&b&l☣ %{_boosterValue}%x %{_boosterName}%: &c&lExpired &b&l☣" to {_player}
+			exit 1 loop
+		if {_boosterRemainTimeLength} <= 1:
+			game_boosterHandler_removePlayerBooster({_player})
+		send action bar "&b&l☣ %{_boosterValue}%x %{_boosterName}%: &f&l%game_displayHandler_secondsToCountdown({_boosterRemainTimeLength})% &b&l☣" to {_player}
+		remove 1 from {_boosterRemainTimeLength}
+		wait 1 second
+
+function game_boosterHandler_pausePlayerBooster(player: offline player):
+	set {_playerUUID} to ({_player}'s UUID)
+	delete {game_boosterHandler::PLAYER_BOOSTER_ACTIVE_%{_playerUUID}%}
+	delete {-game_boosterHandler::ACTIVE_BOOSTER_STATS_%{_playerUUID}%::*}
+	set {_boosterRemainTimeLength} to game_boosterHandler_getPlayerBoosterRemainTimeLength({_player})
+	set {game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%} to stringDatasAPI_setData("BOOSTER_REMAIN_TIME_LENGTH", "%{_boosterRemainTimeLength}%", {game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%})
+	set {game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%} to stringDatasAPI_removeData({game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%}, "BOOSTER_BEGIN_TIME")
+
+function game_boosterHandler_getPlayerBoosterRemainTimeLength(player: offline player) :: number:
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_boosterBeginTime} to (stringDatasAPI_getData({game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%}, "BOOSTER_BEGIN_TIME") parsed as number)
+	if {_boosterBeginTime} is set:
+		set {_nowTime} to unixAPI_dateToUnix(now)
+		set {_lastBoosterActiveTimeLength} to (unixAPI_dateToUnix(now) - {_boosterBeginTime})
+		set {_boosterRemainTimeLength} to (stringDatasAPI_getData({game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%}, "BOOSTER_REMAIN_TIME_LENGTH") parsed as number)
+		return ({_boosterRemainTimeLength} - {_lastBoosterActiveTimeLength})
+	return (stringDatasAPI_getData({game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%}, "BOOSTER_REMAIN_TIME_LENGTH") parsed as number)
+
+function game_boosterHandler_checkPlayerHaveBooster(player: offline player) :: boolean:
+	set {_playerUUID} to ({_player}'s UUID)
+	return (check [{game_boosterHandler::PLAYER_BOOSTER_DATA_%{_playerUUID}%} is set])
+
+function game_boosterHandler_getPlayerBoosterValue(player: offline player, boosterType: text) :: number:
+	set {_playerUUID} to ({_player}'s UUID)
+	if {-game_boosterHandler::ACTIVE_BOOSTER_STATS_%{_playerUUID}%::BOOSTER_TYPE} is not {_boosterType}:
+		stop
+	return {-game_boosterHandler::ACTIVE_BOOSTER_STATS_%{_playerUUID}%::BOOSTER_VALUE}
+
+function game_boosterHandler_reloadAllPlayersBooster():
+	loop all players:
+		if game_boosterHandler_checkPlayerHaveBooster(loop-player) is true:
+			game_boosterHandler_pausePlayerBooster(loop-player)
+			wait 5 ticks
+			game_boosterHandler_activatePlayerBooster(loop-player)
+		wait 3 ticks

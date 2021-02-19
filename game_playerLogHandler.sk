@@ -1,0 +1,33 @@
+function game_playerLogHandler_newLog(playerUUID: text, logType: text, logValue: text):
+	
+	if {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG_INDEX_TOTAL} is set:
+		set {_previousLogIndexSize} to {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG_INDEX_TOTAL}
+	else:
+		set {_previousLogIndexSize} to 0
+
+	set {_currentLogIndex} to ({_previousLogIndexSize} + 1)
+	set {_deleteLogIndex} to ({_previousLogIndexSize} - 20)
+
+#	send "S: %{_previousLogIndexSize}% -> %{-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG_INDEX_TOTAL}% -> %check [{-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG_INDEX_TOTAL} is set]%" to all players
+
+	set {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG_INDEX_TOTAL} to {_currentLogIndex}
+	set {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG::%{_currentLogIndex}%} to {_logValue}
+
+	if {_deleteLogIndex} > 0:
+		delete {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG::%{_deleteLogIndex}%}
+
+function game_playerLogHandler_getPlayerLatestLog(playerUUID: text, logType: text, previousLogs: number = 20) :: texts:
+
+	if {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG_INDEX_TOTAL} is set:
+		set {_previousLogIndexSize} to {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG_INDEX_TOTAL}
+	else:
+		set {_previousLogIndexSize} to 0
+
+	loop {_previousLogs} times:
+
+		set {_loopLogIndex} to ({_previousLogIndexSize} + loop-number - {_previousLogs})
+
+		if {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG::%{_loopLogIndex}%} is set:
+			add {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG::%{_loopLogIndex}%} to {_returnLog::*}
+
+	return {_returnLog::*}

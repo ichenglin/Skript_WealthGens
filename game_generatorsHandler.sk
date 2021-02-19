@@ -1,0 +1,306 @@
+function game_generatorsHandler_newPlayerGenerator(owner: offline player, location: location, level: number, enhanced: boolean = false):
+	set {_generatorLocationText} to game_generatorsHandler_locationToText({_location})
+	set {_generatorLocationPlot} to game_plotsHandler_checkLocationInPlot(game_plotsHandler_newPlotSettings({-game_dataHandler::PLOT_SETTING_ROAD_SIZE}, {-game_dataHandler::PLOT_SETTING_PLOT_SIZE}), {_location})
+	set {_generatorOwnerUUID} to ({_owner}'s UUID)
+	game_generatorsHandler_generators_generatorData_addData({_generatorOwnerUUID}, {_generatorLocationText}, {_generatorLocationPlot}, {_level}, {_enhanced})
+	game_generatorsHandler_generators_plotData_addData({_generatorLocationText}, {_generatorLocationPlot})
+	game_generatorsHandler_generators_playerData_addData({_generatorOwnerUUID}, {_generatorLocationText})
+	if {_owner} is online:
+		game_generatorsHandler_addActiveGenerator({_generatorLocationText})
+#	send "&c%{game_generatorsHandler_generatorData::%{_generatorLocationText}%}%" to all players
+#	send "&6%{game_generatorsHandler_plotData::%{_generatorLocationPlot}%}%" to all players
+#	send "&a%{game_generatorsHandler_playerData::%{_generatorOwnerUUID}%}%" to all players
+
+function game_generatorsHandler_removePlayerGenerator(generatorLocationText: text):
+	set {_generatorLocationPlot} to stringDatasAPI_getData({game_generatorsHandler_generatorData::%{_generatorLocationText}%}, "GENERATOR_IN_PLOT")
+	set {_generatorOwnerUUID} to stringDatasAPI_getData({game_generatorsHandler_generatorData::%{_generatorLocationText}%}, "GENERATOR_OWNER")
+	if game_generatorsHandler_isActiveGenerator({_generatorLocationText}) is true:
+		game_generatorsHandler_removeActiveGenerator({_generatorLocationText})
+	game_generatorsHandler_generators_plotData_removeData({_generatorLocationText}, {_generatorLocationPlot})
+	game_generatorsHandler_generators_playerData_removeData({_generatorOwnerUUID}, {_generatorLocationText})
+	game_generatorsHandler_generators_generatorData_removeData({_generatorLocationText})
+#	send "&dRBI: %{_generatorLocationText}% %{_generatorLocationPlot}% %{_generatorOwnerUUID}%" to all players
+#	send "&c%{game_generatorsHandler_generatorData::%{_generatorLocationText}%}%" to all players
+#	send "&6%{game_generatorsHandler_plotData::%{_generatorLocationPlot}%}%" to all players
+#	send "&a%{game_generatorsHandler_playerData::%{_generatorOwnerUUID}%}%" to all players
+
+function game_generatorsHandler_removePlotGenerator(plotId: text):
+	set {_generatorsInPlotLocationText::*} to game_generatorsHandler_generators_plotData_getPlotGenerators({_plotId})
+	if {_generatorsInPlotLocationText::*} is not set:
+		stop
+#	send "&c%{_plotId}% - %{_generatorsInPlotLocationText::*}%" to all players
+	loop {_generatorsInPlotLocationText::*}:
+		game_playerControlPanelHandler_panelGUI_editGenerator_playerRemoveGenerator({_null}, {_null}, loop-value)
+#		send "Generator at %loop-value% has been deleted!" to all players
+
+function game_generatorsHandler_generators_generatorData_addData(generatorOwnerUUID: text, generatorLocationText: text, generatorLocationPlot: text, generatorLevel: number, generatorEnhanced: boolean):
+	set {_generatorDataRaw} to stringDatasAPI_setData("GENERATOR_OWNER", {_generatorOwnerUUID})
+	set {_generatorDataRaw} to stringDatasAPI_setData("GENERATOR_LEVEL", "%{_generatorLevel}%", {_generatorDataRaw})
+	if {_generatorEnhanced} is true:
+		set {_generatorDataRaw} to stringDatasAPI_setData("GENERATOR_ENHANCED", "TRUE", {_generatorDataRaw})
+#	set {_generatorDataRaw} to stringDatasAPI_setData("GENERATOR_IN_PLOT", {_generatorLocationPlot}, {_location}), {_generatorDataRaw})
+	set {_generatorDataRaw} to stringDatasAPI_setData("GENERATOR_IN_PLOT", {_generatorLocationPlot}, {_generatorDataRaw})
+	set {_generatorDataRaw} to stringDatasAPI_setData("GENERATOR_PLACED_DATE", "%unixAPI_dateToUnix(now)%", {_generatorDataRaw})
+	set {game_generatorsHandler_generatorData::%{_generatorLocationText}%} to {_generatorDataRaw}
+
+function game_generatorsHandler_generators_generatorData_removeData(generatorLocationText: text):
+	delete {game_generatorsHandler_generatorData::%{_generatorLocationText}%}
+
+function game_generatorsHandler_generators_plotData_addData(generatorLocationText: text, generatorLocationPlot: text):
+	set {_plotGeneratorsAmount} to (stringDatasAPI_getData({game_generatorsHandler_plotData::%{_generatorLocationPlot}%}, "PLOT_GENERATORS_AMOUNT") parsed as number)
+	set {_plotGeneratorsList} to stringDatasAPI_getData({game_generatorsHandler_plotData::%{_generatorLocationPlot}%}, "PLOT_GENERATORS_LIST")
+	set {_plotGeneratorsAmount} to (check [{_plotGeneratorsAmount} is set] ? {_plotGeneratorsAmount} : 0)
+	set {_plotGeneratorsList} to (check [{_plotGeneratorsList} is set] ? "%{_plotGeneratorsList}%," : "")
+	set {_plotDataRaw} to stringDatasAPI_setData("PLOT_GENERATORS_AMOUNT", "%({_plotGeneratorsAmount} + 1)%")
+	set {_plotDataRaw} to stringDatasAPI_setData("PLOT_GENERATORS_LIST", "%{_plotGeneratorsList}%%{_generatorLocationText}%", {_plotDataRaw})
+	set {game_generatorsHandler_plotData::%{_generatorLocationPlot}%} to {_plotDataRaw}
+
+function game_generatorsHandler_generators_plotData_removeData(generatorLocationText: text, generatorLocationPlot: text):
+	set {_generatorPlotGeneratorsListAmount} to (stringDatasAPI_getData({game_generatorsHandler_plotData::%{_generatorLocationPlot}%}, "PLOT_GENERATORS_AMOUNT") parsed as number)
+	set {_generatorPlotGeneratorsListAmount} to (check [{_generatorPlotGeneratorsListAmount} is set] ? {_generatorPlotGeneratorsListAmount} : 0)
+#	send "Remain Generators In Plot: %({_generatorPlotGeneratorsListAmount} - 1)%" to all players
+	set {_generatorPlotGeneratorsListText} to stringDatasAPI_getData({game_generatorsHandler_plotData::%{_generatorLocationPlot}%}, "PLOT_GENERATORS_LIST")
+	set {_generatorPlotGeneratorsListSplit::*} to {_generatorPlotGeneratorsListText} split by ","
+	loop {_generatorPlotGeneratorsListSplit::*}:
+		if loop-value is {_generatorLocationText}:
+			delete {_generatorPlotGeneratorsListSplit::%loop-index%}
+	if (amount of {_generatorPlotGeneratorsListSplit::*}) <= 0:
+		delete {game_generatorsHandler_plotData::%{_generatorLocationPlot}%}
+		stop
+	set {_generatorPlotNewGeneratorsListText} to join {_generatorPlotGeneratorsListSplit::*} with delimiter ","
+	set {game_generatorsHandler_plotData::%{_generatorLocationPlot}%} to stringDatasAPI_setData("PLOT_GENERATORS_AMOUNT", "%(amount of {_generatorPlotGeneratorsListSplit::*})%", {game_generatorsHandler_plotData::%{_generatorLocationPlot}%})
+	set {game_generatorsHandler_plotData::%{_generatorLocationPlot}%} to stringDatasAPI_setData("PLOT_GENERATORS_LIST", {_generatorPlotNewGeneratorsListText}, {game_generatorsHandler_plotData::%{_generatorLocationPlot}%})
+
+function game_generatorsHandler_generators_plotData_getPlotMaximumGeneratorsAmount(generatorLocationPlot: text) :: number:
+	set {_plotActiveMachineStatsGeneratorCapacity} to game_plotStatsHandler_getPlotActiveMachineStat({_generatorLocationPlot}, "GENERATOR_CAPACITY", 0)
+	return ({-game_dataHandler::PLOT_DEFAULT_MAXIMUM_GENERATORS_AMOUNT} + {_plotActiveMachineStatsGeneratorCapacity})
+
+function game_generatorsHandler_generators_plotData_getPlotGeneratorsAmount(generatorLocationPlot: text) :: number:
+	set {_generatorPlotGeneratorsAmount} to (stringDatasAPI_getData({game_generatorsHandler_plotData::%{_generatorLocationPlot}%}, "PLOT_GENERATORS_AMOUNT") parsed as number)
+	if {_generatorPlotGeneratorsAmount} is set:
+		return {_generatorPlotGeneratorsAmount}
+	return 0
+
+function game_generatorsHandler_generators_plotData_getPlotGenerators(generatorLocationPlot: text) :: texts:
+	set {_generatorPlotGeneratorsListText} to stringDatasAPI_getData({game_generatorsHandler_plotData::%{_generatorLocationPlot}%}, "PLOT_GENERATORS_LIST")
+	set {_generatorPlotGeneratorsListSplit::*} to {_generatorPlotGeneratorsListText} split by ","
+	return {_generatorPlotGeneratorsListSplit::*}
+
+function game_generatorsHandler_generators_playerData_addData(generatorOwnerUUID: text, generatorLocationText: text):
+	set {_playerOwnedGeneratorsAmount} to (stringDatasAPI_getData({game_generatorsHandler_playerData::%{_generatorOwnerUUID}%}, "OWNED_GENERATORS_AMOUNT") parsed as number)
+	set {_playerOwnedGeneratorsList} to stringDatasAPI_getData({game_generatorsHandler_playerData::%{_generatorOwnerUUID}%}, "OWNED_GENERATORS_LIST")
+	set {_playerOwnedGeneratorsAmount} to (check [{_playerOwnedGeneratorsAmount} is set] ? {_playerOwnedGeneratorsAmount} : 0)
+	set {_playerOwnedGeneratorsList} to (check [{_playerOwnedGeneratorsList} is set] ? "%{_playerOwnedGeneratorsList}%," : "")
+	set {_playerDataRaw} to stringDatasAPI_setData("OWNED_GENERATORS_AMOUNT", "%({_playerOwnedGeneratorsAmount} + 1)%")
+	set {_playerDataRaw} to stringDatasAPI_setData("OWNED_GENERATORS_LIST", "%{_playerOwnedGeneratorsList}%%{_generatorLocationText}%", {_playerDataRaw})
+	set {game_generatorsHandler_playerData::%{_generatorOwnerUUID}%} to {_playerDataRaw}
+
+function game_generatorsHandler_generators_playerData_removeData(generatorOwnerUUID: text, generatorLocationText: text):
+	set {_generatorOwnerGeneratorsAmount} to (stringDatasAPI_getData({game_generatorsHandler_playerData::%{_generatorOwnerUUID}%}, "OWNED_GENERATORS_AMOUNT") parsed as number)
+	set {_generatorOwnerGeneratorsAmount} to (check [{_generatorOwnerGeneratorsAmount} is set] ? {_generatorOwnerGeneratorsAmount} : 0)
+	if {_generatorOwnerGeneratorsAmount} <= 1:
+		set {game_generatorsHandler_playerData::%{_generatorOwnerUUID}%} to stringDatasAPI_removeData({game_generatorsHandler_playerData::%{_generatorOwnerUUID}%}, "OWNED_GENERATORS_AMOUNT")
+		set {game_generatorsHandler_playerData::%{_generatorOwnerUUID}%} to stringDatasAPI_removeData({game_generatorsHandler_playerData::%{_generatorOwnerUUID}%}, "OWNED_GENERATORS_LIST")
+		stop
+	else:
+		set {game_generatorsHandler_playerData::%{_generatorOwnerUUID}%} to stringDatasAPI_setData("OWNED_GENERATORS_AMOUNT", "%({_generatorOwnerGeneratorsAmount} - 1)%", {game_generatorsHandler_playerData::%{_generatorOwnerUUID}%})
+	set {_generatorOwnerGeneratorsListRaw} to stringDatasAPI_getData({game_generatorsHandler_playerData::%{_generatorOwnerUUID}%}, "OWNED_GENERATORS_LIST")
+	set {_generatorOwnerGeneratorsList::*} to {_generatorOwnerGeneratorsListRaw} split by ","
+	loop {_generatorOwnerGeneratorsList::*}:
+		if {_generatorOwnerGeneratorsList::%loop-index%} is {_generatorLocationText}:
+			delete {_generatorOwnerGeneratorsList::%loop-index%}
+	set {_generatorOwnerGeneratorsListText} to join {_generatorOwnerGeneratorsList::*} with ","
+	set {game_generatorsHandler_playerData::%{_generatorOwnerUUID}%} to stringDatasAPI_setData("OWNED_GENERATORS_LIST", {_generatorOwnerGeneratorsListText}, {game_generatorsHandler_playerData::%{_generatorOwnerUUID}%})
+
+function game_generatorsHandler_generators_playerData_getPlayerGenerators(generatorOwnerUUID: text) :: texts:
+	set {_playerGeneratorsListText} to stringDatasAPI_getData({game_generatorsHandler_playerData::%{_generatorOwnerUUID}%}, "OWNED_GENERATORS_LIST")
+	set {_playerGeneratorsListSplit::*} to {_playerGeneratorsListText} split by ","
+	return {_playerGeneratorsListSplit::*}
+
+function game_generatorsHandler_getGeneratorItem(generatorLevel: number, enhanced: boolean = false) :: item:
+	set {_enhancedName} to (check [{_enhanced}] ? "Enhanced " : "")
+	set {_enhancedLore} to (check [{_enhanced}] ? "||&f||&6&lENHANCED" : "")
+	return (glowing SPAWNER named "&e%{_enhancedName}%%{-game_dataHandler::GENERATOR_NAME_%{_generatorLevel}%}%" with lore "||&eType: &fGenerator||&eLevel: &f%{_generatorLevel}%%{_enhancedLore}%")
+
+function game_generatorsHandler_getGeneratorEnhancerItem(enhanceableLevelMinimum: number, enhanceableLevelMaximum: number) :: item:
+	return (glowing NETHER_STAR named "&eGenerator Enhancer" with lore "||&eType: &fGenerator Enhancer||&f||&eEnhanceable Level: &f%{_enhanceableLevelMinimum}%~%{_enhanceableLevelMaximum}%")
+
+function game_generatorsHandler_getGeneratorLootWorthMultiplier(generatorLocationText: text) :: number:
+	set {_generatorData::*} to game_generatorsHandler_getGeneratorData({_generatorLocationText}, ("GENERATOR_ENHANCED" and "GENERATOR_IN_PLOT"))
+	set {_generatorLootWorthMultiplier} to 1
+	if {_generatorData::1} is "TRUE":
+		add 0.2 to {_generatorLootWorthMultiplier}
+	add (game_plotStatsHandler_getPlotActiveMachineStat({_generatorData::2}, "LOOT_WORTH_MULTIPLIER", 0)) to {_generatorLootWorthMultiplier}
+	return {_generatorLootWorthMultiplier}
+
+function game_generatorsHandler_getGeneratorData(generatorLocationText: text, returnDatas: texts) :: texts:
+	loop (amount of {_returnDatas::*}) times:
+		set {_loopData} to stringDatasAPI_getData({game_generatorsHandler_generatorData::%{_generatorLocationText}%}, {_returnDatas::%loop-number%})
+		set {_loopData} to (check [{_loopData} is set] ? {_loopData} : "")
+		add {_loopData} to {_datasRecorded::*}
+		delete {_loopData}
+	return {_datasRecorded::*}
+
+function game_generatorsHandler_getItemData(item: item, returnDatas: texts) :: texts:
+	set {_itemLoreSplit::*} to (uncolored {_item}'s lore) split by "||"
+	set {_loopDataIndex} to 0
+	loop {_returnDatas::*}:
+		add 1 to {_loopDataIndex}
+		loop {_itemLoreSplit::*}:
+			set {_loopLoreLineSplit::*} to {_itemLoreSplit::%loop-index-2%} split by ": "
+			if {_loopLoreLineSplit::1} is {_returnDatas::%loop-index-1%}:
+				if {_loopLoreLineSplit::2} is set:
+					add {_loopLoreLineSplit::2} to {_datasRecorded::*}
+				else:
+					add "IS_SET" to {_datasRecorded::*}
+#
+#		Theres a bug with Skript's "exit 1 loop"
+#		so I marked it as a comment to prevent it
+#		running in this code
+#
+#				exit 1 loop
+#
+		if (amount of {_datasRecorded::*}) < {_loopDataIndex}:
+			add "NONE" to {_datasRecorded::*}
+	return {_datasRecorded::*}
+
+function game_generatorsHandler_getPlayerTotalGeneratorLootWorth(playerUUID: text) :: number:
+	set {_playerTotalGeneratorLootWorth} to 0
+	set {_playerGenerators::*} to game_generatorsHandler_generators_playerData_getPlayerGenerators({_playerUUID})
+	loop {_playerGenerators::*}:
+		set {_loopGenerator} to loop-value
+		set {_loopGeneratorData::*} to game_generatorsHandler_getGeneratorData({_loopGenerator}, "GENERATOR_LEVEL")
+		set {_loopGeneratorLevel} to ({_loopGeneratorData::1} parsed as number)
+		set {_loopGeneratorLootWorth} to {-game_dataHandler::GENERATOR_LOOT_WORTH_%{_loopGeneratorLevel}%}
+		set {_loopGeneratorLootWorthMultiplier} to game_generatorsHandler_getGeneratorLootWorthMultiplier({_loopGenerator})
+		set {_loopGeneratorLootWorth} to ceil({-game_dataHandler::GENERATOR_LOOT_WORTH_%{_loopGeneratorLevel}%} * {_loopGeneratorLootWorthMultiplier})
+		add {_loopGeneratorLootWorth} to {_playerTotalGeneratorLootWorth}
+	return {_playerTotalGeneratorLootWorth}
+
+function game_generatorsHandler_setGeneratorLevel(generatorLocationText: text, newGeneratorLevel: number):
+	set {_generatorLocation} to game_generatorsHandler_textToLocation({_generatorLocationText})
+	set {game_generatorsHandler_generatorData::%{_generatorLocationText}%} to stringDatasAPI_setData("GENERATOR_LEVEL", "%{_newGeneratorLevel}%", {game_generatorsHandler_generatorData::%{_generatorLocationText}%})
+	set block at {_generatorLocation} to {-game_dataHandler::GENERATOR_BLOCK_%{_newGeneratorLevel}%}
+	if {-game_generatorsHandler_generatorActiveLevel::%{_generatorLocationText}%} is set:
+		set {-game_generatorsHandler_generatorActiveLevel::%{_generatorLocationText}%} to {_newGeneratorLevel}
+
+function game_generatorsHandler_setGeneratorEnhanced(generatorLocationText: text, newGeneratorEnhanced: boolean):
+	set {_generatorLocation} to game_generatorsHandler_textToLocation({_generatorLocationText})
+	set {_newGeneratorEnhancedText} to "%{_newGeneratorEnhanced}%" in upper case
+	set {game_generatorsHandler_generatorData::%{_generatorLocationText}%} to stringDatasAPI_setData("GENERATOR_ENHANCED", {_newGeneratorEnhancedText}, {game_generatorsHandler_generatorData::%{_generatorLocationText}%})
+	if {-game_generatorsHandler_generatorActiveLevel::%{_generatorLocationText}%} is set:
+		set {-game_generatorsHandler_generatorActiveLevel::%{_generatorLocationText}%} to {_newGeneratorLevel}
+
+function game_generatorsHandler_checkBlockIsGenerator(location: location) :: boolean:
+	set {_locationText} to game_generatorsHandler_locationToText({_location})
+	return (check [{game_generatorsHandler_generatorData::%{_locationText}%} is set])
+
+function game_generatorsHandler_locationToText(location: location) :: text:
+	set {_location} to (block at {_location}'s location)
+	return "%(({_location}'s x coords) - 0.5)%_%(({_location}'s y coords) - 0.5)%_%(({_location}'s z coords) - 0.5)%_%{_location}'s world%"
+
+function game_generatorsHandler_textToLocation(locationText: text) :: location:
+	set {_locationTextSplit::*} to {_locationText} split by "_"
+	if (amount of {_locationTextSplit::*}) > 4:
+		loop ((amount of {_locationTextSplit::*}) - 4) times:
+			set 	{_locationTextSplit::4} to "%{_locationTextSplit::4}%_%{_locationTextSplit::%(4 + loop-number)%}%"
+	set {_x} to (({_locationTextSplit::1} parsed as number) + 0.5)
+	set {_y} to (({_locationTextSplit::2} parsed as number) + 0.5)
+	set {_z} to (({_locationTextSplit::3} parsed as number) + 0.5)
+	set {_returnLocation} to (location at ({_x}, {_y}, {_z}) in world({_locationTextSplit::4}))
+	return {_returnLocation}
+
+function game_generatorsHandler_addActiveGenerator(locationText: text):
+	set {_generatorLocation} to game_generatorsHandler_textToLocation({_locationText})
+	set {-game_generatorsHandler_generatorActiveLocationText::%{_locationText}%} to {_locationText}
+	set {-game_generatorsHandler_generatorActiveLocation::%{_locationText}%} to {_generatorLocation}
+	set {_generatorData::*} to game_generatorsHandler_getGeneratorData({_locationText}, ("GENERATOR_LEVEL" and "GENERATOR_IN_PLOT"))
+#	game_plotStatsHandler_updatePlotActiveMachineStats({_generatorData::2}, false)
+	set {_generatorLevel} to ({_generatorData::1} parsed as number)
+	set {-game_generatorsHandler_generatorActiveLevel::%{_locationText}%} to {_generatorLevel}
+	game_generatorsHandler_updateActiveGenerator_lootWorthMultiplier({_locationText})
+	spawn a hologram at (location 1.3 meters above {_generatorLocation}) and store in {-game_generatorsHandler_generatorActiveHologram::%{_locationText}%}
+	wait 1 tick
+	game_generatorsHandler_updateActiveGenerator_hologramText({_locationText})
+	
+function game_generatorsHandler_removeActiveGenerator(locationText: text):
+	delete {-game_generatorsHandler_generatorActiveLocation::%{_locationText}%}
+	delete {-game_generatorsHandler_generatorActiveLevel::%{_locationText}%}
+	delete {-game_generatorsHandler_generatorActiveLoot::%{_locationText}%}
+	delete hologram {-game_generatorsHandler_generatorActiveHologram::%{_locationText}%}
+	delete {-game_generatorsHandler_generatorActiveHologram::%{_locationText}%}
+
+function game_generatorsHandler_updateActiveGenerator(locationText: text):
+	game_generatorsHandler_removeActiveGenerator({_locationText})
+	game_generatorsHandler_addActiveGenerator({_locationText})
+
+function game_generatorsHandler_updateActiveGenerator_lootWorthMultiplier(locationText: text):
+	set {_generatorLootWorthMultiplier} to game_generatorsHandler_getGeneratorLootWorthMultiplier({_locationText})
+	set {-game_generatorsHandler_generatorActiveLoot::%{_locationText}%} to game_dataHandler_registerGeneratorDisplay_getGeneratorLoot({-game_generatorsHandler_generatorActiveLevel::%{_locationText}%}, {_generatorLootWorthMultiplier})
+
+function game_generatorsHandler_updateActiveGenerator_hologramText(locationText: text):
+	set {_generatorData::*} to game_generatorsHandler_getGeneratorData({_locationText}, ("GENERATOR_LEVEL" and "GENERATOR_ENHANCED"))
+	set {_generatorLevel} to ({_generatorData::1} parsed as number)
+	set {_nextGeneratorLevel} to ({_generatorLevel} + 1)
+	set {_generatorName} to {-game_dataHandler::GENERATOR_NAME_%{_generatorLevel}%}
+	set {_generatorName} to (check [{_generatorData::2} is "TRUE"] ? "&d✯ Enhanced %{_generatorName}% ✯" : "&e%{_generatorName}%")
+	set {_generatorMaxedUpgradeText} to (check [{-game_dataHandler::GENERATOR_NAME_%{_nextGeneratorLevel}%} is not set] ? "&c" : "")
+	set the lines of {-game_generatorsHandler_generatorActiveHologram::%{_locationText}%} to ({_generatorName} and "%{_generatorMaxedUpgradeText}%Level %{_generatorLevel}%")
+
+function game_generatorsHandler_isActiveGenerator(locationText: text) :: boolean:
+	return (check [{-game_generatorsHandler_generatorActiveLocation::%{_locationText}%} is set])
+
+function game_generatorsHandler_updateAllActiveGenerators():
+	game_dataHandler_resetHolograms()
+	set {_loopCount} to 0
+	loop {-game_generatorsHandler_generatorActiveLocation::*}:
+		add 1 to {_loopCount}
+		game_generatorsHandler_removeActiveGenerator(loop-index)
+		if {_loopCount} >= 50:
+			wait 5 ticks
+			set {_loopCount} to 0
+	loop all players:
+		game_generatorsHandler_updatePlayerActiveGenerators(loop-player, "ADD_GENERATOR")
+		wait 3 ticks
+
+function game_generatorsHandler_updatePlayerActiveGenerators(player: player, action: text):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerOwnedGeneratorsListRaw} to stringDatasAPI_getData({game_generatorsHandler_playerData::%{_playerUUID}%}, "OWNED_GENERATORS_LIST")
+	set {_playerOwnedGeneratorsList::*} to {_playerOwnedGeneratorsListRaw} split by ","
+	set {_loopNumber} to 0
+	loop {_playerOwnedGeneratorsList::*}:
+		add 1 to {_loopNumber}
+		if {_action} is "ADD_GENERATOR":
+			set {_loopGeneratorData::*} to game_generatorsHandler_getGeneratorData(loop-value, "GENERATOR_IN_PLOT")
+			set {_updateInvolvedPlots::%{_loopGeneratorData::1}%} to true
+			game_generatorsHandler_addActiveGenerator(loop-value)
+		else if {_action} is "REMOVE_GENERATOR":
+			game_generatorsHandler_removeActiveGenerator(loop-value)
+		wait 2 ticks
+	loop {_updateInvolvedPlots::*}:
+		game_plotStatsHandler_updatePlotActiveMachineStats(loop-index, true)
+		wait 2 ticks
+
+function game_generatorsHandler_dropLootAll(lootAmount: number = 1):
+#	set {_loopCount} to 0
+	if {-game_eventHandler::GENERATOR_LOOT_SPAWN_QUEUE::*} is set:
+		stop
+	set {-game_eventHandler::GENERATOR_LOOT_SPAWN_QUEUE::*} to {-game_generatorsHandler_generatorActiveLocationText::*}
+#	send "&bSET -> %{-game_eventHandler::GENERATOR_LOOT_SPAWN_QUEUE::*}%" to all players
+#	loop {-game_generatorsHandler_generatorActiveLocation::*}:
+#		add 1 to {_loopCount}
+#		set {_generatorLocation} to {-game_generatorsHandler_generatorActiveLocation::%loop-index%}
+#		set {_generatorLevel} to {-game_generatorsHandler_generatorActiveLevel::%loop-index%}
+#		drop ({_lootAmount} of {-game_generatorsHandler_generatorActiveLoot::%loop-index%}) at (location 1 meter above {_generatorLocation})
+#		if {_loopCount} >= 50:
+#			set {_loopCount} to 0
+#			wait 10 ticks
+
+#function deleteAll():
+#	delete {game_generatorsHandler_generatorData::*}
+#	delete {game_generatorsHandler_playerData::*}
+#	delete {game_generatorsHandler_plotData::*}
+
+#function debug():
+#	loop {game_generatorsHandler_plotData::*}:
+#		send "%loop-index%" to all players

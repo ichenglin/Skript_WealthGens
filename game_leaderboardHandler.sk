@@ -1,0 +1,8 @@
+function game_leaderboardHandler_newLeaderboard(leaderboardId: text, leaderboardLocation: location):
+	delete hologram {-game_leaderboardHandler::%{_leaderboardId}%_HOLOGRAM}
+	set {-game_leaderboardHandler::%{_leaderboardId}%_LOCATION} to {_leaderboardLocation}
+	spawn a hologram at {_leaderboardLocation} and store in {-game_leaderboardHandler::%{_leaderboardId}%_HOLOGRAM}
+
+function game_leaderboardHandler_updateLeaderboard(leaderboardId: text, leaderboardTitle: text, leaderboardContent: texts):
+	set {_leaderboardDisplayContent::*} to ("&f✯ %{_leaderboardTitle}% ✯" and "&b&m+------------------------------+" and {_leaderboardContent::*} and "&b&m+------------------------------+")
+	set the lines of {-game_leaderboardHandler::%{_leaderboardId}%_HOLOGRAM} to {_leaderboardDisplayContent::*}

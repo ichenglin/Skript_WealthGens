@@ -1,0 +1,18 @@
+command /illegalGenerators:
+	trigger:
+		if executor is not a op:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		set {_loopCount} to 0
+		loop {game_generatorsHandler_generatorData::*}:
+			add 1 to {_loopCount}
+			set {_loopGeneratorLevel} to (stringDatasAPI_getData({game_generatorsHandler_generatorData::%loop-index%}, "GENERATOR_LEVEL") parsed as number)
+			if {_loopGeneratorLevel} >= 13:
+				set {_loopGeneratorOwnerUUID} to stringDatasAPI_getData({game_generatorsHandler_generatorData::%loop-index%}, "GENERATOR_OWNER")
+				set {_illegalGeneratorOwners::%{_loopGeneratorOwnerUUID}%} to true
+			if floor({_loopCount} / 100) is ({_loopCount} / 100):
+				wait 1 second
+		send "REPORT COMPLETED!" to executor
+		loop {_illegalGeneratorOwners::*}:
+			send "[OWNER] %loop-index%" to executor
+			

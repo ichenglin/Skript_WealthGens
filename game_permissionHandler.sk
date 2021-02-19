@@ -1,0 +1,34 @@
+function game_permissionHandler_getPlayerPrefix(player: offline player) :: text:
+	set {_highestPriorityRankId} to game_permissionHandler_getPlayerHighestPriorityRankId({_player})
+	if {-game_dataHandler::RANK_PREFIX_TEXT_%{_highestPriorityRankId}%} is "":
+		return "%{-game_dataHandler::RANK_PREFIX_COLOR_%{_highestPriorityRankId}%}%"
+	else:
+		return "%{-game_dataHandler::RANK_PREFIX_COLOR_%{_highestPriorityRankId}%}%[%{-game_dataHandler::RANK_PREFIX_TEXT_%{_highestPriorityRankId}%}%] "
+
+function game_permissionHandler_getPlayerRankDisplay(player: offline player) :: text:
+	set {_highestPriorityRankId} to game_permissionHandler_getPlayerHighestPriorityRankId({_player})
+	set {_rankColor} to {-game_dataHandler::RANK_PREFIX_COLOR_%{_highestPriorityRankId}%}
+	return "%{_rankColor}%%{_highestPriorityRankId} in upper case%"
+
+function game_permissionHandler_getPlayerHighestPriorityRankId(player: offline player) :: text:
+	set {_playerUpgradableRankLevel} to game_playersHandler_getPlayerUpgradableRank({_player})
+	set {_playerUpgradableRankId} to {-game_dataHandler::UPGRADABLE_RANK_ID_%{_playerUpgradableRankLevel}%}
+	set {_playerParticularRankId} to game_playersHandler_getPlayerParticularRank({_player})
+	if {-game_dataHandler::RANK_PRIORITY_%{_playerUpgradableRankId}%} >= {-game_dataHandler::RANK_PRIORITY_%{_playerParticularRankId}%}:
+		return {_playerUpgradableRankId}
+	else:
+		return {_playerParticularRankId}
+
+function game_permissionHandler_player_upgradableRankRankup(player: offline player, newRankLevel: number):
+	set {_newRankId} to {-game_dataHandler::UPGRADABLE_RANK_ID_%{_newRankLevel}%}
+	set {_newRankText} to {-game_dataHandler::RANK_PREFIX_TEXT_%{_newRankId}%}
+	set {_newRankColor} to  {-game_dataHandler::RANK_PREFIX_COLOR_%{_newRankId}%}
+	game_playersHandler_setPlayerUpgradableRank({_player}, {_newRankLevel})
+	send title "&a&lCongratulation" with subtitle "&eYou ranked up to %{_newRankColor}%&l%{_newRankText} in upper case%" to {_player} for 2 seconds with 0 tick fadein and 0 tick fadeout
+	send "&eYou have ranked up to %{_newRankColor}%&l%{_newRankText} in upper case%&e!" to {_player}
+
+function game_permissionHandler_getPlayerPermission(player: offline player, permission: text) :: number:
+	set {_playerUpgradableRankLevel} to game_playersHandler_getPlayerUpgradableRank({_player})
+	set {_playerUpgradableRankId} to {-game_dataHandler::UPGRADABLE_RANK_ID_%{_playerUpgradableRankLevel}%}
+	set {_playerParticularRankId} to game_playersHandler_getPlayerParticularRank({_player})
+	return ({-game_dataHandler::RANK_PERMISSION_%{_playerUpgradableRankId}%::PERMISSION_%{_permission}%} + {-game_dataHandler::RANK_PERMISSION_%{_playerParticularRankId}%::PERMISSION_%{_permission}%})

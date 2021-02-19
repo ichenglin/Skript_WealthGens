@@ -1,0 +1,108 @@
+function game_itemShopHandler_shopGUI(player: player, category: text, page: number = 1):
+	open chest with 6 row named "&cItem Shop" to {_player}
+	loop 2 times:
+		loop 9 times:
+			format a gui slot ((((loop-number-1) - 1) * 45) + ((loop-number-2) - 1)) of {_player} with black glass named "&f" to do nothing
+	loop 2 times:
+		loop 4 times:
+			format a gui slot ((((loop-number-1) - 1) * 8) + (((loop-number-2) - 1) * 9) + 9) of {_player} with black glass named "&f" to do nothing
+	if {_category} is "MAIN":
+		format a gui slot 20 of {_player} with OAK_WOODEN_PLANKS named "&eBlocks" to close then run function game_itemShopHandler_shopGUI({_player}, "BLOCKS")
+		format a gui slot 22 of {_player} with DEAD_SHRUB named "&eMiscellaneous" to close then run function game_itemShopHandler_shopGUI({_player}, "MISCELLANEOUS")
+		format a gui slot 24 of {_player} with BREWING_STAND_ITEM named "&eDecorations" to close then run function game_itemShopHandler_shopGUI({_player}, "DECORATIONS")
+		format a gui slot 29 of {_player} with (IRON_PICKAXE with no NBT) named "&eTools" to close then run function game_itemShopHandler_shopGUI({_player}, "TOOLS")
+		format a gui slot 31 of {_player} with HAY_BLOCK named "&eGenerators & Machines" to close then run function game_itemShopHandler_shopGUI({_player}, "MACHINERY")
+		format a gui slot 33 of {_player} with REDSTONE named "&eRedstone" to close then run function game_itemShopHandler_shopGUI({_player}, "REDSTONE")
+		stop
+	else if {_category} is "BLOCKS" or "MISCELLANEOUS" or "DECORATIONS" or "TOOLS" or "MACHINERY" or "REDSTONE":
+		set {_itemsInCategory} to {-game_dataHandler::ITEM_SHOP_CATEGORY_ITEM_AMOUNT_%{_category}%}
+		set {_categoryPages} to ceil({_itemsInCategory} / 28)
+		loop 28 times:
+			set {_loopShopItemIndex} to (({_page} - 1) * 28 + loop-number)
+			set {_loopSlot} to (loop-number + (floor((loop-number - 1) / 7) * 2) + 9)
+			if {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_ITEM_%{_category}%_%{_loopShopItemIndex}%} is not set:
+				exit 1 loop
+			set {_loopShopItemDisplay} to game_itemShopHandler_shopItemDisplay({_category}, {_loopShopItemIndex})
+			format a gui slot {_loopSlot} of {_player} with {_loopShopItemDisplay} to close then run function game_itemShopHandler_playerItemPurchaseGUI({_player}, {_category}, {_loopShopItemIndex})
+	if {_page} > 1:
+		format a gui slot 47 of {_player} with ARROW named "&cPrevious Page (%{_page}%/%{_categoryPages}%)" to run function game_itemShopHandler_shopGUI({_player}, {_category}, ({_page} - 1))
+	else:
+		format a gui slot 47 of {_player} with black glass named "&f" to do nothing
+	format a gui slot 49 of {_player} with BARRIER named "&cBack to Main Menu" to close then run function game_itemShopHandler_shopGUI({_player}, "MAIN")
+	if {_page} < {_categoryPages}:
+		format a gui slot 51 of {_player} with ARROW named "&cNext Page (%{_page}%/%{_categoryPages}%)" to run function game_itemShopHandler_shopGUI({_player}, {_category}, ({_page} + 1))
+	else:
+		format a gui slot 51 of {_player} with black glass named "&f" to do nothing
+
+function game_itemShopHandler_playerItemPurchaseGUI(player: player, shopItemCategory: text, shopItemIndex: number, stacks: number = 1):
+	set {_shopItem} to {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_ITEM_%{_shopItemCategory}%_%{_shopItemIndex}%}
+	set {_shopItemDisplayName} to {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_NAME_%{_shopItemCategory}%_%{_shopItemIndex}%}
+	set {_shopItemPriceCurrency} to {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_PRICE_CURRENCY_%{_shopItemCategory}%_%{_shopItemIndex}%}
+	set {_shopItemPrice} to {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_PRICE_%{_shopItemCategory}%_%{_shopItemIndex}%}
+	set {_shopItemPriceStacked} to ({_shopItemPrice} * {_stacks})
+	set {_shopItemAmount} to (item amount of {_shopItem})
+	set {_shopItemAmountStacked} to ({_shopItemAmount} * {_stacks})
+	open chest with 6 row named "&cItem Shop [Confirm Purchase &l%game_displayHandler_getNumberDigitDisplay({_stacks})% &cStacks]" to {_player}
+	loop 2 times:
+		loop 9 times:
+			format a gui slot ((((loop-number-1) - 1) * 45) + ((loop-number-2) - 1)) of {_player} with black glass named "&f" to do nothing
+	loop 2 times:
+		loop 4 times:
+			format a gui slot ((((loop-number-1) - 1) * 8) + (((loop-number-2) - 1) * 9) + 9) of {_player} with black glass named "&f" to do nothing
+	format a gui slot 22 of {_player} with (1 of {_shopItem}) named "&a%game_displayHandler_getNumberDigitDisplay({_shopItemAmountStacked})%x &e%{_shopItemDisplayName}%" with lore "||&eAmount: &f%game_displayHandler_getNumberDigitDisplay({_shopItemAmountStacked})% &e(&f%{_shopItemAmount}% x%game_displayHandler_getNumberDigitDisplay({_stacks})%&e)||&ePrice: &f%{-game_dataHandler::CURRENCY_DISPLAY_%{_shopItemPriceCurrency}%}%&f%game_displayHandler_getNumberDigitDisplay({_shopItemPriceStacked})% &e(&f%{-game_dataHandler::CURRENCY_DISPLAY_%{_shopItemPriceCurrency}%}%&f%game_displayHandler_getNumberDigitDisplay({_shopItemPrice})% x%game_displayHandler_getNumberDigitDisplay({_stacks})%&e)"
+	set {_editAmount::*} to 1 and 4 and 16 and 64
+	loop 4 times:
+		set {_loopEditAmount} to {_editAmount::%loop-number%}
+		set {_stacksAfterEdit} to ({_stacks} + {_loopEditAmount})
+		format a gui slot ((loop-number - 1) * 9 + 11) of {_player} with ({_loopEditAmount} of light green glass) named "&a+%{_loopEditAmount}% Stacks" with lore "||&eStacks: &f%game_displayHandler_getNumberDigitDisplay({_stacksAfterEdit})% &a&o(+%{_loopEditAmount}%)" to run function game_itemShopHandler_playerItemPurchaseGUI({_player}, {_shopItemCategory}, {_shopItemIndex}, {_stacksAfterEdit})
+	loop 4 times:
+		set {_loopEditAmount} to {_editAmount::%loop-number%}
+		set {_stacksAfterEdit} to ({_stacks} - {_loopEditAmount})
+		if {_stacksAfterEdit} > 0:
+			format a gui slot ((loop-number - 1) * 9 + 15) of {_player} with ({_loopEditAmount} of red glass) named "&c-%{_loopEditAmount}% Stacks" with lore "||&eStacks: &f%game_displayHandler_getNumberDigitDisplay({_stacksAfterEdit})% &c&o(-%{_loopEditAmount}%)" to run function game_itemShopHandler_playerItemPurchaseGUI({_player}, {_shopItemCategory}, {_shopItemIndex}, {_stacksAfterEdit})
+		else:
+			format a gui slot ((loop-number - 1) * 9 + 15) of {_player} with ({_loopEditAmount} of red glass) named "&c-%{_loopEditAmount}% Stacks" with lore "||&cYou need to purchase||&cat least 1 stack." to do nothing
+	format a gui slot 40 of {_player} with gold_ingot named "&aConfirm Purchase" with lore "||&eAmount: &f%game_displayHandler_getNumberDigitDisplay({_shopItemAmountStacked})% &e(&f%{_shopItemAmount}% x%game_displayHandler_getNumberDigitDisplay({_stacks})%&e)||&ePrice: &f%{-game_dataHandler::CURRENCY_DISPLAY_%{_shopItemPriceCurrency}%}%&f%game_displayHandler_getNumberDigitDisplay({_shopItemPriceStacked})% &e(&f%{-game_dataHandler::CURRENCY_DISPLAY_%{_shopItemPriceCurrency}%}%&f%{_shopItemPrice}% x%game_displayHandler_getNumberDigitDisplay({_stacks})%&e)" to close then run function game_itemShopHandler_playerItemPurchaseConfirm({_player}, {_shopItemCategory}, {_shopItemIndex}, {_stacks})
+
+function game_itemShopHandler_playerItemPurchaseConfirm(player: player, shopItemCategory: text, shopItemIndex: number, stacks: number = 1):
+	set {_shopItem} to {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_ITEM_%{_shopItemCategory}%_%{_shopItemIndex}%}
+	set {_shopItemDisplayName} to game_itemShopHandler_shopItemName({_shopItem}, {_shopItemCategory}, {_shopItemIndex})
+	set {_shopItemPriceCurrency} to {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_PRICE_CURRENCY_%{_shopItemCategory}%_%{_shopItemIndex}%}
+	set {_shopItemPrice} to {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_PRICE_%{_shopItemCategory}%_%{_shopItemIndex}%}
+	set {_shopItemPriceStacked} to ({_shopItemPrice} * {_stacks})
+	set {_shopItemAmount} to (item amount of {_shopItem})
+	set {_shopItemAmountStacked} to ({_shopItemAmount} * {_stacks})
+	if {_shopItemPriceCurrency} is "BALANCE":
+		set {_playerBalance} to game_playersHandler_getPlayerBalance({_player})
+		if {_playerBalance} < {_shopItemPriceStacked}:
+			send "&cYou don't have enough money to purchase &l%game_displayHandler_getNumberDigitDisplay({_shopItemAmountStacked})%x %{_shopItemDisplayName}%&c!%nl%&cYou need &l%game_displayHandler_getNumberDigitDisplay({_shopItemPriceStacked} - {_playerBalance})% more &cto purchase this item!" to {_player}
+			stop
+		game_playersHandler_setPlayerBalance({_player}, ({_playerBalance} - {_shopItemPriceStacked}))
+	else if {_shopItemPriceCurrency} is "TOKEN":
+		set {_playerTokens} to game_playersHandler_getPlayerTokens({_player})
+		if {_playerTokens} < {_shopItemPriceStacked}:
+			send "&cYou don't have enough tokens to purchase &l%game_displayHandler_getNumberDigitDisplay({_shopItemAmountStacked})%x %{_shopItemDisplayName}%&c!%nl%&cYou need &l%game_displayHandler_getNumberDigitDisplay({_shopItemPriceStacked} - {_playerTokens})% more &cto purchase this item!" to {_player}
+			stop
+		game_playersHandler_setPlayerTokens({_player}, ({_playerTokens} - {_shopItemPriceStacked}))
+	else:
+		send "&cAn error has occured while purchasing this item, please report to an administrator if you believe this is in error! (INVALID CURRENCY TYPE)" to {_player}
+	send "&eYou have purchased &f%game_displayHandler_getNumberDigitDisplay({_shopItemAmountStacked})%x %{_shopItemDisplayName}%&e!" to {_player}
+	give ({_shopItemAmountStacked} of {_shopItem}) to {_player}
+
+function game_itemShopHandler_shopItemDisplay(shopItemCategory: text, shopItemIndex: number) :: item:
+	set {_shopItem} to {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_ITEM_%{_shopItemCategory}%_%{_shopItemIndex}%}
+	set {_shopItemAmount} to (item amount of {_shopItem})
+	set {_shopItemPriceCurrency} to {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_PRICE_CURRENCY_%{_shopItemCategory}%_%{_shopItemIndex}%}
+	set {_shopItemPrice} to {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_PRICE_%{_shopItemCategory}%_%{_shopItemIndex}%}
+	set {_shopItemDisplayName} to game_itemShopHandler_shopItemName({_shopItem}, {_shopItemCategory}, {_shopItemIndex})
+	set {_shopDisplayItem} to {_shopItem} named "&a%{_shopItemAmount}%x &e%{_shopItemDisplayName}%" with lore "||&eAmount: &f%game_displayHandler_getNumberDigitDisplay({_shopItemAmount})%||&ePrice: &f%{-game_dataHandler::CURRENCY_DISPLAY_%{_shopItemPriceCurrency}%}%&f%game_displayHandler_getNumberDigitDisplay({_shopItemPrice})%||%{_shopItem}'s lore%"
+	return {_shopDisplayItem}
+
+function game_itemShopHandler_shopItemName(shopItem: item, shopItemCategory: text, shopItemIndex: number) :: text:
+	if {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_NAME_%{_shopItemCategory}%_%{_shopItemIndex}%} is not "":
+		set {_shopItemDisplayName} to {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_NAME_%{_shopItemCategory}%_%{_shopItemIndex}%}
+	else if ({_shopItem}'s name) is set:
+		set {_shopItemDisplayName} to (uncolored {_shopItem}'s name)
+	else:
+		set {_shopItemDisplayName} to "Item"
+	return {_shopItemDisplayName}

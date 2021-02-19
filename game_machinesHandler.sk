@@ -1,0 +1,210 @@
+function game_machinesHandler_newPlayerMachine(owner: offline player, location: location, machineType: text, machineLevel: number):
+	set {_machineLocationText} to game_generatorsHandler_locationToText({_location})
+	set {_machineLocationPlot} to game_plotsHandler_checkLocationInPlot(game_plotsHandler_newPlotSettings({-game_dataHandler::PLOT_SETTING_ROAD_SIZE}, {-game_dataHandler::PLOT_SETTING_PLOT_SIZE}), {_location})
+	set {_machineOwnerUUID} to ({_owner}'s UUID)
+	game_machinesHandler_machines_machineData_addData({_machineOwnerUUID}, {_machineLocationText}, {_machineLocationPlot}, {_machineType}, {_machineLevel})
+	game_machinesHandler_machines_plotData_addData({_machineLocationText}, {_machineLocationPlot})
+	game_machinesHandler_machines_playerData_addData({_machineOwnerUUID}, {_machineLocationText})
+	if {_owner} is online:
+		game_machinesHandler_addActiveMachine({_machineLocationText})
+
+function game_machinesHandler_removePlayerMachine(machineLocationText: text):
+	set {_machineLocationPlot} to stringDatasAPI_getData({game_machinesHandler_machineData::%{_machineLocationText}%}, "MACHINE_IN_PLOT")
+	set {_machineOwnerUUID} to stringDatasAPI_getData({game_machinesHandler_machineData::%{_machineLocationText}%}, "MACHINE_OWNER")
+	if game_machinesHandler_isActiveMachine({_machineLocationText}) is true:
+		game_machinesHandler_removeActiveMachine({_machineLocationText})
+	game_machinesHandler_machines_plotData_removeData({_machineLocationText}, {_machineLocationPlot})
+	game_machinesHandler_machines_playerData_removeData({_machineOwnerUUID}, {_machineLocationText})
+	game_machinesHandler_machines_machineData_removeData({_machineLocationText})
+
+function game_machinesHandler_removePlotMachine(plotId: text):
+	set {_machinesInPlotLocationText::*} to game_machinesHandler_machines_plotData_getPlotMachines({_plotId})
+	if {_machinesInPlotLocationText::*} is not set:
+		stop
+	loop {_machinesInPlotLocationText::*}:
+		game_playerControlPanelHandler_panelGUI_editMachine_playerRemoveMachine({_null}, {_null}, loop-value)
+
+function game_machinesHandler_machines_machineData_addData(machineOwnerUUID: text, machineLocationText: text, machineLocationPlot: text, machineType: text, machineLevel: number):
+	set {_machineDataRaw} to stringDatasAPI_setData("MACHINE_OWNER", {_machineOwnerUUID})
+	set {_machineDataRaw} to stringDatasAPI_setData("MACHINE_IN_PLOT", {_machineLocationPlot}, {_machineDataRaw})
+	set {_machineDataRaw} to stringDatasAPI_setData("MACHINE_PLACED_DATE", "%unixAPI_dateToUnix(now)%", {_machineDataRaw})
+	set {_machineDataRaw} to stringDatasAPI_setData("MACHINE_TYPE", {_machineType}, {_machineDataRaw})
+	set {_machineDataRaw} to stringDatasAPI_setData("MACHINE_LEVEL", "%{_machineLevel}%", {_machineDataRaw})
+	set {game_machinesHandler_machineData::%{_machineLocationText}%} to {_machineDataRaw}
+
+function game_machinesHandler_machines_machineData_removeData(machineLocationText: text):
+	delete {game_machinesHandler_machineData::%{_machineLocationText}%}
+
+function game_machinesHandler_machines_plotData_addData(machineLocationText: text, machineLocationPlot: text):
+	set {_plotMachinesAmount} to (stringDatasAPI_getData({game_machinesHandler_plotData::%{_machineLocationPlot}%}, "PLOT_MACHINES_AMOUNT") parsed as number)
+	set {_plotMachinesList} to stringDatasAPI_getData({game_machinesHandler_plotData::%{_machineLocationPlot}%}, "PLOT_MACHINES_LIST")
+	set {_plotMachinesAmount} to (check [{_plotMachinesAmount} is set] ? {_plotMachinesAmount} : 0)
+	set {_plotMachinesList} to (check [{_plotMachinesList} is set] ? "%{_plotMachinesList}%," : "")
+	set {_plotDataRaw} to stringDatasAPI_setData("PLOT_MACHINES_AMOUNT", "%({_plotMachinesAmount} + 1)%")
+	set {_plotDataRaw} to stringDatasAPI_setData("PLOT_MACHINES_LIST", "%{_plotMachinesList}%%{_machineLocationText}%", {_plotDataRaw})
+	set {game_machinesHandler_plotData::%{_machineLocationPlot}%} to {_plotDataRaw}
+
+function game_machinesHandler_machines_plotData_removeData(machineLocationText: text, machineLocationPlot: text):
+	set {_machinePlotMachinesListAmount} to (stringDatasAPI_getData({game_machinesHandler_plotData::%{_machineLocationPlot}%}, "PLOT_MACHINES_AMOUNT") parsed as number)
+	set {_machinePlotMachinesListAmount} to (check [{_machinePlotMachinesListAmount} is set] ? {_machinePlotMachinesListAmount} : 0)
+#	send "Remain Machines In Plot: %({_machinePlotMachinesListAmount} - 1)%" to all players
+	if ({_machinePlotMachinesListAmount} - 1) <= 0:
+#		send "&bMachine: PLOT DATA CLEARED" to all players
+		delete {game_machinesHandler_plotData::%{_machineLocationPlot}%}
+		stop
+	set {_machinePlotMachinesListText} to stringDatasAPI_getData({game_machinesHandler_plotData::%{_machineLocationPlot}%}, "PLOT_MACHINES_LIST")
+	set {_machinePlotMachinesListSplit::*} to {_machinePlotMachinesListText} split by ","
+	loop {_machinePlotMachinesListSplit::*}:
+		if loop-value is {_machineLocationText}:
+			delete {_machinePlotMachinesListSplit::%loop-index%}
+	set {_machinePlotNewMachinesListText} to join {_machinePlotMachinesListSplit::*} with delimiter ","
+	set {game_machinesHandler_plotData::%{_machineLocationPlot}%} to stringDatasAPI_setData("PLOT_MACHINES_AMOUNT", "%({_machinePlotMachinesListAmount} - 1)%", {game_machinesHandler_plotData::%{_machineLocationPlot}%})
+	set {game_machinesHandler_plotData::%{_machineLocationPlot}%} to stringDatasAPI_setData("PLOT_MACHINES_LIST", {_machinePlotNewMachinesListText}, {game_machinesHandler_plotData::%{_machineLocationPlot}%})
+
+function game_machinesHandler_machines_plotData_getPlotMaximumMachinesAmount(machineLocationPlot: text) :: number:
+	set {_plotActiveMachineStatsMachineCapacity} to game_plotStatsHandler_getPlotActiveMachineStat({_machineLocationPlot}, "MACHINE_CAPACITY", 0)
+	return ({-game_dataHandler::PLOT_DEFAULT_MAXIMUM_MACHINES_AMOUNT} + {_plotActiveMachineStatsMachineCapacity})
+
+function game_machinesHandler_machines_plotData_getPlotMachinesAmount(machineLocationPlot: text) :: number:
+	set {_machinePlotMachinesAmount} to (stringDatasAPI_getData({game_machinesHandler_plotData::%{_machineLocationPlot}%}, "PLOT_MACHINES_AMOUNT") parsed as number)
+	if {_machinePlotMachinesAmount} is set:
+		return {_machinePlotMachinesAmount}
+	return 0
+
+function game_machinesHandler_machines_plotData_getPlotMachines(machineLocationPlot: text) :: texts:
+	set {_machinePlotMachinesListText} to stringDatasAPI_getData({game_machinesHandler_plotData::%{_machineLocationPlot}%}, "PLOT_MACHINES_LIST")
+	set {_machinePlotMachinesListSplit::*} to {_machinePlotMachinesListText} split by ","
+	return {_machinePlotMachinesListSplit::*}
+
+function game_machinesHandler_machines_playerData_addData(machineOwnerUUID: text, machineLocationText: text):
+	set {_playerOwnedMachinesAmount} to (stringDatasAPI_getData({game_machinesHandler_playerData::%{_machineOwnerUUID}%}, "OWNED_MACHINES_AMOUNT") parsed as number)
+	set {_playerOwnedMachinesList} to stringDatasAPI_getData({game_machinesHandler_playerData::%{_machineOwnerUUID}%}, "OWNED_MACHINES_LIST")
+	set {_playerOwnedMachinesAmount} to (check [{_playerOwnedMachinesAmount} is set] ? {_playerOwnedMachinesAmount} : 0)
+	set {_playerOwnedMachinesList} to (check [{_playerOwnedMachinesList} is set] ? "%{_playerOwnedMachinesList}%," : "")
+	set {_playerDataRaw} to stringDatasAPI_setData("OWNED_MACHINES_AMOUNT", "%({_playerOwnedMachinesAmount} + 1)%")
+	set {_playerDataRaw} to stringDatasAPI_setData("OWNED_MACHINES_LIST", "%{_playerOwnedMachinesList}%%{_machineLocationText}%", {_playerDataRaw})
+	set {game_machinesHandler_playerData::%{_machineOwnerUUID}%} to {_playerDataRaw}
+
+function game_machinesHandler_machines_playerData_removeData(machineOwnerUUID: text, machineLocationText: text):
+	set {_machineOwnerMachinesAmount} to (stringDatasAPI_getData({game_machinesHandler_playerData::%{_machineOwnerUUID}%}, "OWNED_MACHINES_AMOUNT") parsed as number)
+	set {_machineOwnerMachinesAmount} to (check [{_machineOwnerMachinesAmount} is set] ? {_machineOwnerMachinesAmount} : 0)
+	if {_machineOwnerMachinesAmount} <= 1:
+		set {game_machinesHandler_playerData::%{_machineOwnerUUID}%} to stringDatasAPI_removeData({game_machinesHandler_playerData::%{_machineOwnerUUID}%}, "OWNED_MACHINES_AMOUNT")
+		set {game_machinesHandler_playerData::%{_machineOwnerUUID}%} to stringDatasAPI_removeData({game_machinesHandler_playerData::%{_machineOwnerUUID}%}, "OWNED_MACHINES_LIST")
+		stop
+	else:
+		set {game_machinesHandler_playerData::%{_machineOwnerUUID}%} to stringDatasAPI_setData("OWNED_MACHINES_AMOUNT", "%({_machineOwnerMachinesAmount} - 1)%", {game_machinesHandler_playerData::%{_machineOwnerUUID}%})
+	set {_machineOwnerMachinesListRaw} to stringDatasAPI_getData({game_machinesHandler_playerData::%{_machineOwnerUUID}%}, "OWNED_MACHINES_LIST")
+	set {_machineOwnerMachinesList::*} to {_machineOwnerMachinesListRaw} split by ","
+	loop {_machineOwnerMachinesList::*}:
+		if {_machineOwnerMachinesList::%loop-index%} is {_machineLocationText}:
+			delete {_machineOwnerMachinesList::%loop-index%}
+	set {_machineOwnerMachinesListText} to join {_machineOwnerMachinesList::*} with ","
+	set {game_machinesHandler_playerData::%{_machineOwnerUUID}%} to stringDatasAPI_setData("OWNED_MACHINES_LIST", {_machineOwnerMachinesListText}, {game_machinesHandler_playerData::%{_machineOwnerUUID}%})
+
+function game_machinesHandler_machines_playerData_getPlayerMachines(machineOwnerUUID: text) :: texts:
+	set {_playerMachinesListText} to stringDatasAPI_getData({game_machinesHandler_playerData::%{_machineOwnerUUID}%}, "OWNED_MACHINES_LIST")
+	set {_playerMachinesListSplit::*} to {_playerMachinesListText} split by ","
+	return {_playerMachinesListSplit::*}
+
+function game_machinesHandler_getMachineItem(machineType: text, machineLevel: number) :: item:
+	set {_machineName} to game_machinesHandler_getMachineNameByMachineType({_machineType})
+	set {_machineStatsText} to game_playerControlPanelHandler_machineDisplay_machineStatsDisplay({_machineType}, {_machineLevel})
+	return (glowing SPAWNER named "&e%{_machineName}% Machine" with lore "||&eType: &fMachine||&eMachine Type: &f%{_machineName}%||&f&eLevel: &f%{_machineLevel}%||&f||&eMachine Stats:||%{_machineStatsText}%||&f")
+
+function game_machinesHandler_getMachineData(machineLocationText: text, returnDatas: texts) :: texts:
+	loop (amount of {_returnDatas::*}) times:
+		set {_loopData} to stringDatasAPI_getData({game_machinesHandler_machineData::%{_machineLocationText}%}, {_returnDatas::%loop-number%})
+		set {_loopData} to (check [{_loopData} is set] ? {_loopData} : "")
+		add {_loopData} to {_datasRecorded::*}
+		delete {_loopData}
+	return {_datasRecorded::*}
+
+function game_machinesHandler_checkBlockIsMachine(location: location) :: boolean:
+	set {_locationText} to game_generatorsHandler_locationToText({_location})
+	return (check [{game_machinesHandler_machineData::%{_locationText}%} is set])
+
+function game_machinesHandler_addActiveMachine(locationText: text, updateMachinePlotActiveGenerators: boolean = true):
+	set {_machineLocation} to game_generatorsHandler_textToLocation({_locationText})
+	set {-game_machinesHandler_machineActiveLocation::%{_locationText}%} to {_machineLocation}
+	set {_machineData::*} to game_machinesHandler_getMachineData({_locationText}, ("MACHINE_TYPE" and "MACHINE_LEVEL"))
+	set {-game_machinesHandler_machineActiveId::%{_locationText}%} to "%{_machineData::1}%_%{_machineData::2}%"
+	spawn a hologram at (location 1.3 meters above {_machineLocation}) and store in {-game_machinesHandler_machineActiveHologram::%{_locationText}%}
+	if {_updateMachinePlotActiveGenerators} is true:
+		set {_machinePlotData::*} to game_machinesHandler_getMachineData({_locationText}, "MACHINE_IN_PLOT")
+		game_plotStatsHandler_updatePlotActiveMachineStats({_machinePlotData::1}, true)
+	wait 1 tick
+	game_machinesHandler_updateActiveMachine_hologramText({_locationText})
+
+function game_machinesHandler_removeActiveMachine(locationText: text, updateMachinePlotActiveGenerators: boolean = true):
+	delete {-game_machinesHandler_machineActiveId::%{_locationText}%}
+	delete hologram {-game_machinesHandler_machineActiveHologram::%{_locationText}%}
+	delete {-game_machinesHandler_machineActiveHologram::%{_locationText}%}
+	if {_updateMachinePlotActiveGenerators} is true:
+		set {_machinePlotData::*} to game_machinesHandler_getMachineData({_locationText}, "MACHINE_IN_PLOT")
+		game_plotStatsHandler_updatePlotActiveMachineStats({_machinePlotData::1}, true)
+
+function game_machinesHandler_updateActiveMachine_hologramText(locationText: text):
+	set {_machineData::*} to game_machinesHandler_getMachineData({_locationText}, ("MACHINE_TYPE" and "MACHINE_LEVEL"))
+	set {_machineName} to game_machinesHandler_getMachineNameByMachineType({_machineData::1})
+	set the lines of {-game_machinesHandler_machineActiveHologram::%{_locationText}%} to ("&a%{_machineName}% Machine" and "&fLevel %{_machineData::2}%")
+
+function game_machinesHandler_isActiveMachine(locationText: text) :: boolean:
+	return (check [{-game_machinesHandler_machineActiveLocation::%{_locationText}%} is set])
+
+function game_machinesHandler_updateAllActiveMachines():
+	loop {-game_machinesHandler_machineActiveLocation::*}:
+		game_machinesHandler_removeActiveMachine(loop-index, false)
+	loop all players:
+		game_machinesHandler_updatePlayerActiveMachines(loop-player, "ADD_MACHINE")
+
+function game_machinesHandler_updatePlayerActiveMachines(player: player, action: text):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerOwnedMachinesListRaw} to stringDatasAPI_getData({game_machinesHandler_playerData::%{_playerUUID}%}, "OWNED_MACHINES_LIST")
+	set {_playerOwnedMachinesList::*} to {_playerOwnedMachinesListRaw} split by ","
+	set {_loopNumber} to 0
+	loop {_playerOwnedMachinesList::*}:
+		add 1 to {_loopNumber}
+		set {_loopMachineData::*} to game_machinesHandler_getMachineData(loop-value, "MACHINE_IN_PLOT")
+		set {_updateInvolvedPlots::%{_loopMachineData::1}%} to true
+		if {_action} is "ADD_MACHINE":
+			game_machinesHandler_addActiveMachine(loop-value, false)
+		else if {_action} is "REMOVE_MACHINE":
+			game_machinesHandler_removeActiveMachine(loop-value, false)
+		if ({_loopNumber} / 10) is floor({_loopNumber} / 10):
+			wait 1 tick
+	loop {_updateInvolvedPlots::*}:
+		game_plotStatsHandler_updatePlotActiveMachineStats(loop-index, true)
+
+function game_machinesHandler_getMachineNameByMachineType(machineType: text) :: text:
+	replace all "_" with " " in {_machineType}
+	set {_machineType} to game_displayHandler_uppercaseLeadingLetter({_machineType})
+	return "%{_machineType}%"
+
+function game_machinesHandler_getPlotActiveMachineStats(machineLocationPlot: text) :: objects:
+	set {_machineStatTypes::*} to {-game_dataHandler::MACHINE_STAT_TYPES} split by ","
+	loop {_machineStatTypes::*}:
+		set {_plotMachineOverallStat::%loop-value%} to 0
+	set {_plotMachines::*} to game_machinesHandler_machines_plotData_getPlotMachines({_machineLocationPlot})
+	loop {_plotMachines::*}:
+		if game_machinesHandler_isActiveMachine(loop-value) is false:
+			delete {_plotMachines::%loop-index%}
+	loop {_plotMachines::*}:
+		set {_loopActiveMachineId} to {-game_machinesHandler_machineActiveId::%loop-value%}
+		loop {-game_dataHandler::MACHINE_%{_loopActiveMachineId}%_STATS::*}:
+			if {_plotMachineOverallStat::%loop-index-2%} is set:
+				add loop-value-2 to {_plotMachineOverallStat::%loop-index-2%}
+	loop {_plotMachineOverallStat::*}:
+		if loop-value is not 0:
+			add loop-index to {_returnData::*}
+			add loop-value to {_returnData::*}
+	return {_returnData::*}
+
+#function deleteAllM():
+#	delete {game_machinesHandler_machineData::*}
+#	delete {game_machinesHandler_playerData::*}
+#	delete {game_machinesHandler_plotData::*}
+
+#function debugM():
+#	loop {game_machinesHandler_plotData::*}:
+#		send "%loop-index% | %loop-value%" to all players

@@ -1,0 +1,1372 @@
+command /rules [<text>]:
+	trigger:
+		send "&e[WealthGens Server Rules]%nl%%nl%&e1. &fAny kind of &eblacklisted modifications &fthat gives &eunfair advantages &fis not allowed, commonly known as &echeating&f.%nl%&e2. &fAny way of &eflooding server chat &fwith meaningless messages or include &eracism&f, &esexism&f, &eharassment &fcontent is not allowed.%nl%&e3. &fConnect to the server with &eanother account after being prohibited &fwill result in punishment length extension.%nl%&e4. &fAbusing &eglitches &for &espreading the instructions &fare not allowed, please &ereport bugs &fon our discord server or to a staff member.%nl%%nl%&e&lNOTE: &eBadlion Client&f, &eLunar Client&f, &eLounge Client&f, and other &eclient-based anti-cheat &fwill &cNOT &fbe considered when we suspend a user for rule ##1!%nl%" to executor
+
+command /sell [<text>]:
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		set {_inventorySellData::*} to game_economyHandler_sellLootInInventory((executor's inventory), true)
+		game_economyHandler_playerSoldItems(executor, {_inventorySellData::1}, {_inventorySellData::2})
+		if {_inventorySellData::1} > 0:
+			game_playersHandler_playSoundToPlayers(executor, "entity.player.levelup")
+		else:
+			game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+
+command /pay [<offline player>] [<number>] [<text>]:
+	trigger:
+		if arg 1 or arg 2 is not set:
+			send "&cUsage: /pay <player> <amount>" to executor
+			stop
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		if arg 1 is executor:
+			send "&cYou are not allowed to pay yourself!" to executor
+			game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+			stop
+		if arg 1 is not online:
+			send "&cThe player is not online!" to executor
+			game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+			stop
+		set {_payAmount} to floor(arg 2)
+		if {_payAmount} <= 0:
+			send "&cYou need to pay at least $1." to executor
+			game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+			stop
+		set {_payerBalance} to game_playersHandler_getPlayerBalance(executor)
+		set {_receiverBalance} to game_playersHandler_getPlayerBalance(arg 1)
+		if {_payAmount} > {_payerBalance}:
+			send "&cYou don't have enough money to pay!" to executor
+			game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+			stop
+		game_playersHandler_setPlayerBalance(executor, ({_payerBalance} - {_payAmount}))
+		game_playersHandler_setPlayerBalance((arg 1), ({_receiverBalance} + {_payAmount}))
+		send "&eYou paid &f$%game_displayHandler_getNumberDigitDisplay({_payAmount})% &eto &f%game_playersHandler_getPlayerDisplayName(arg 1)%&e!" to executor
+		send "&eYou have received &f$%game_displayHandler_getNumberDigitDisplay({_payAmount})% &efrom &f%game_playersHandler_getPlayerDisplayName(executor)%&e!" to (arg 1)
+		game_playersHandler_playSoundToPlayers(executor, "entity.player.levelup")
+
+command /tokenPay [<offline player>] [<number>] [<text>]:
+	trigger:
+		if arg 1 or arg 2 is not set:
+			send "&cUsage: /tokenPay <player> <amount>" to executor
+			stop
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		if arg 1 is executor:
+			send "&cYou are not allowed to pay yourself!" to executor
+			game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+			stop
+		if arg 1 is not online:
+			send "&cThe player is not online!" to executor
+			game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+			stop
+		set {_payAmount} to floor(arg 2)
+		if {_payAmount} <= 0:
+			send "&cYou need to pay at least ⛂1." to executor
+			game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+			stop
+		set {_payerTokens} to game_playersHandler_getPlayerTokens(executor)
+		set {_receiverTokens} to game_playersHandler_getPlayerTokens(arg 1)
+		if {_payAmount} > {_payerTokens}:
+			send "&cYou don't have enough tokens to pay!" to executor
+			game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+			stop
+		game_playersHandler_setPlayerTokens(executor, ({_payerTokens} - {_payAmount}))
+		game_playersHandler_setPlayerTokens((arg 1), ({_receiverTokens} + {_payAmount}))
+		send "&eYou paid &c⛂%game_displayHandler_getNumberDigitDisplay({_payAmount})% &eto &f%game_playersHandler_getPlayerDisplayName(arg 1)%&e!" to executor
+		send "&eYou have received &c⛂%game_displayHandler_getNumberDigitDisplay({_payAmount})% &efrom &f%game_playersHandler_getPlayerDisplayName(executor)%&e!" to (arg 1)
+		game_playersHandler_playSoundToPlayers(executor, "entity.player.levelup")
+
+command /tokenVoucher [<number>] [<text>]:
+	trigger:
+		if arg 1 is not set:
+			send "&cUsage: /tokenVoucher <tokens>" to executor
+			stop
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		set {_withdrawTokensAmount} to floor(arg 1)
+		if {_withdrawTokensAmount} <= 0:
+			send "&cInvalid token withdraw amount!" to executor
+			stop
+		set {_playerTokens} to game_playersHandler_getPlayerTokens(executor)
+		if {_playerTokens} < {_withdrawTokensAmount}:
+			send "&cYou don't have enough tokens to withdraw!" to executor
+			stop
+		game_playersHandler_setPlayerTokens(executor, ({_playerTokens} - {_withdrawTokensAmount}), true)
+		send "&eYou have withdrawn &f%{_withdrawTokensAmount}% &etokens!" to executor
+		give game_crateHandler_playerOpenCrate_getRewardItem(executor, "TOKEN_VOUCHER:%{_withdrawTokensAmount}%:1", false, true) to ("%executor%" parsed as player)
+
+command /spawn [<text>]:
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		teleport executor to {-game_dataHandler::SERVER_SPAWN}
+		send "&eYou have been teleported to spawn!" to player
+
+command /crates [<text>]:
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		teleport executor to {-game_dataHandler::WARP_CRATES}
+		send "&eYou have been teleported to crates!" to player
+
+command /ranks [<text>]:
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		teleport executor to {-game_dataHandler::WARP_RANKS}
+		send "&eYou have been teleported to ranks!" to player
+
+command /shop [<text>]:
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		game_itemShopHandler_shopGUI(executor, "MAIN")
+
+command /control [<offline player>] [<text>]:
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		set {_controlPanelTarget} to executor
+		if executor is a op:
+			if arg 1 is set:
+				set {_controlPanelTarget} to (arg 1)
+				send "&aYou are now viewing %game_playersHandler_getPlayerDisplayName(arg 1)%'s control panel." to executor
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		game_playerControlPanelHandler_panelGUI(executor, {_controlPanelTarget}, "GENERATOR_LIST")
+
+command /balance [<text>]:
+	aliases: /bal
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		if arg 1 is set:
+			set {_targetPlayer} to (arg 1 parsed as offline player)
+			set {_targetPlayerUUID} to ({_targetPlayer}'s UUID)
+			if {game_playersHandler_playerData::%{_targetPlayerUUID}%} is not set:
+				send "&cNot found player named %arg 1%!" to executor
+				game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+				stop
+		else:
+			set {_targetPlayer} to (executor)
+		set {_targetPlayerBalance} to game_playersHandler_getPlayerBalance({_targetPlayer})
+		if {_targetPlayer} is executor:
+			send "&eYour balance: &f$%game_displayHandler_getNumberDigitDisplay({_targetPlayerBalance})% &e(&f$%game_displayHandler_getNumberSimplifiedDisplay({_targetPlayerBalance})%&e)" to executor
+		else:
+			send "&ePlayer &f%game_playersHandler_getPlayerDisplayName({_targetPlayer})%&e's balance: &f$%game_displayHandler_getNumberDigitDisplay({_targetPlayerBalance})% &e(&f$%game_displayHandler_getNumberSimplifiedDisplay({_targetPlayerBalance})%&e)" to executor
+
+command /baltop [<number>] [<text>]:
+	trigger:
+		if arg 2 is set:
+			send "&cUsage: /baltop <page>" to executor
+			stop
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		set {_balanceLeaderboardPages} to ceil((amount of {game_playersHandler_balanceTopList::*}) / 5)
+		if arg 1 is set:
+			set {_targetPage} to floor(arg 1)
+			if {_targetPage} is not set:
+				send "&cUsage: /baltop <page>" to executor
+				stop
+			set {_checkValidPage} to (check ([{_targetPage} >= 1]->[{_targetPage} <= {_balanceLeaderboardPages}]))
+			if {_checkValidPage} is false:
+				send "&cYou must enter an integer between 1 and %{_balanceLeaderboardPages}% as page number!" to executor
+				game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+				stop
+		else:
+			set {_targetPage} to 1
+		set {_balanceTopDisplay} to ""
+		loop 5 times:
+			set {_loopLeaderboardIndex} to (({_targetPage} - 1) * 5 + loop-number)
+			if {game_playersHandler_balanceTopList::%{_loopLeaderboardIndex}%} is set:
+				set {_loopPlayerUUID} to {game_playersHandler_balanceTopList::%{_loopLeaderboardIndex}%}
+				set {_loopPlayer} to ({_loopPlayerUUID} parsed as offline player)
+				set {_loopPlayerBalance} to game_playersHandler_getPlayerBalance({_loopPlayer})
+				set {_balanceTopDisplay} to "%{_balanceTopDisplay}%%nl%&b##%{_loopLeaderboardIndex}% &f%game_playersHandler_getPlayerDisplayName({_loopPlayer})% &b► &f$%game_displayHandler_getNumberDigitDisplay({_loopPlayerBalance})% &b(&f$%game_displayHandler_getNumberSimplifiedDisplay({_loopPlayerBalance})%&b)"
+		send "%nl%&b[Ranked Top Balance Players] (Page: %{_targetPage}%/%{_balanceLeaderboardPages}%)%{_balanceTopDisplay}%%nl%&bLeaderboard Update Every 5 Minutes.%nl%" to executor
+
+command /rankup [<text>]:
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		set {_playerCurrentUpgradableRankLevel} to game_playersHandler_getPlayerUpgradableRank(executor)
+		set {_playerNextUpgradableRankLevel} to ({_playerCurrentUpgradableRankLevel} + 1)
+		if {-game_dataHandler::UPGRADABLE_RANK_ID_%{_playerNextUpgradableRankLevel}%} is not set:
+			send "&cYou are currently on the last rank!" to executor
+			game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+			stop
+		set {_upgradeRankCost} to {-game_dataHandler::UPGRADABLE_RANK_UPGRADE_COST_%{_playerNextUpgradableRankLevel}%}
+		if game_playersHandler_getPlayerBalance(executor) < {_upgradeRankCost}:
+			send "&cYou don't have enough money to rankup!" to executor
+			game_playersHandler_playSoundToPlayers(executor, "entity.villager.no")
+			stop
+		game_playersHandler_setPlayerBalance(executor, ((game_playersHandler_getPlayerBalance(executor)) - {_upgradeRankCost}))
+		game_permissionHandler_player_upgradableRankRankup(executor, {_playerNextUpgradableRankLevel})
+		game_playersHandler_playSoundToPlayers(executor, "entity.player.levelup")
+
+command /fly [<text>]:
+	trigger:
+		if game_permissionHandler_getPlayerPermission(executor, "FLY_PERMISSION") <= 0:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if (executor's fly mode) is true:
+			set executor's fly mode to false
+			send "&eYou have &cdisabled &efly mode!" to executor
+		else:
+			set executor's fly mode to true
+			send "&eYou have &aenabled &efly mode!" to executor
+
+command /tp [<offline player>] [<offline player>] [<text>]:
+	trigger:
+		if game_permissionHandler_getPlayerPermission(executor, "TELEPORT_PERMISSION") <= 0:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /teleport <player> [player]" to executor
+			stop
+		if arg 1 is not online:
+			send "&c%arg 1% is not online!" to executor
+			stop
+		if arg 2 is set:
+			if arg 2 is not online:
+				send "&c%arg 2% is not online!" to executor
+				stop
+			set {_targetPlayer} to (arg 1)
+			set {_destinationPlayer} to (arg 2)
+		else:
+			set {_targetPlayer} to executor
+			set {_destinationPlayer} to (arg 1)
+		teleport {_targetPlayer} to {_destinationPlayer}
+		send "&eYou have teleported &f%game_playersHandler_getPlayerDisplayName({_targetPlayer})% &eto &f%game_playersHandler_getPlayerDisplayName({_destinationPlayer})%&e!" to executor
+
+command /invsee [<offline player>] [<text>]:
+	trigger:
+		if game_permissionHandler_getPlayerPermission(executor, "INVSEE_PERMISSION") <= 0:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /invsee <player>" to executor
+			stop
+		if arg 1 is not online:
+			send "&c%arg 1% is not online!" to executor
+			stop
+		open arg 1's inventory to executor
+		send "&eYou are now viewing &f%game_playersHandler_getPlayerDisplayName(arg 1)%&e's inventory!" to executor
+
+#command /vanish [<text>]:
+#	aliases: /v
+#	trigger:
+#		if game_permissionHandler_getPlayerPermission(executor, "VANISH_PERMISSION") <= 0:
+#			send "&cYou are not allowed to use this command!" to executor
+#			stop
+#		if {-game_eventHandler::%executor%_VANISH_MODE} is set:
+#			delete {-game_eventHandler::%executor%_VANISH_MODE}
+#			send "&eYou have &cdisabled &evanish mode!" to executor
+#		else:
+#			set {-game_eventHandler::%executor%_VANISH_MODE} to now
+#			send "&eYou have &aenabled &evanish mode!" to executor
+#		loop all players:
+#			game_eventHandler_updatePlayerVisibility(loop-player)
+
+#command /genInfo [<text>]:
+#	trigger:
+#		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+#			send "&cPlease wait a while before you execute another command!" to executor
+#			stop
+#		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+#		set {_loopGeneratorLevel} to 0
+#		set {_generatorInformationText} to "%nl%&b[Generators Information]"
+#		while (true):
+#			add 1 to {_loopGeneratorLevel}
+#			if {-game_dataHandler::GENERATOR_NAME_%{_loopGeneratorLevel}%} is not set:
+#				exit 1 loop
+#			set {_loopGeneratorName} to {-game_dataHandler::GENERATOR_NAME_%{_loopGeneratorLevel}%}
+#			set {_loopGeneratorUpgradeCost} to {-game_dataHandler::GENERATOR_UPGRADE_COST_%{_loopGeneratorLevel}%}
+#			set {_loopGeneratorLootWorth} to {-game_dataHandler::GENERATOR_LOOT_WORTH_%{_loopGeneratorLevel}%}
+#			set {_generatorInformationText} to "%{_generatorInformationText}%%nl%&b##%{_loopGeneratorLevel}% &f%{_loopGeneratorName}% &b► &f%{_loopGeneratorUpgradeCost}%"
+#		set {_generatorInformationText} to "%{_generatorInformationText}%%nl%&b[Generators Information]%nl%"
+#		send {_generatorInformationText} to executor
+
+command /playerInfo [<offline player>] [<text>]:
+	trigger:
+		if arg 1 is not set:
+			send "&cUsage: /playerInfo <player>" to executor
+			stop
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		set {_targetPlayer} to (arg 1)
+		set {_targetPlayerUUID} to ({_targetPlayer}'s UUID)
+		if {game_playersHandler_playerData::%{_targetPlayerUUID}%} is not set:
+			send "&cPlayer data not found for this player!" to executor
+			stop
+		set {_playerGroupName} to game_groupsHandler_getPlayerGroupName({_targetPlayerUUID})
+		if {_playerGroupName} is not set:
+			set {_playerGroupName} to "&cNone"
+		if {_targetPlayer} is online:
+			set {_playerLastOnlineDisplay} to "&aOnline"
+		else:
+			set {_playerLastOnlineDisplay} to "&f%game_displayHandler_secondsToTime(game_playersHandler_getPlayerLastOnline({_targetPlayer}))% Ago"
+		send "&e&m+-------&e [Player Information] &e&m-------+%nl%&ePlayer: &f%{_targetPlayer}% &e(&f%game_playersHandler_getPlayerDisplayName({_targetPlayer})%&e)%nl%&eGroup: &f%{_playerGroupName}%%nl%&eLevel: &f%game_playersHandler_getPlayerLevel({_targetPlayer})% &e(&f%game_displayHandler_getNumberDigitDisplay(game_playersHandler_getPlayerExperience({_targetPlayer}))% EXP&e)%nl%&eBalance: &f%game_displayHandler_getNumberDigitDisplay(game_playersHandler_getPlayerBalance({_targetPlayer}))%%nl%&eTokens: &f%game_displayHandler_getNumberDigitDisplay(game_playersHandler_getPlayerTokens({_targetPlayer}))%%nl%&eGenerators: &f%game_playersHandler_getPlayerOwnedGenerators({_targetPlayer})%/%game_playersHandler_getPlayerMaximumGenerators({_targetPlayer})%%nl%&eMachines: &f%game_playersHandler_getPlayerOwnedMachines({_targetPlayer})%/%game_playersHandler_getPlayerMaximumMachines({_targetPlayer})%%nl%&eLast Online: %{_playerLastOnlineDisplay}%%nl%&e&m+-------&e [Player Information] &e&m-------+" to executor
+
+command /serverInfo [<text>]:
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		send "&e&m+-------&e [Server Information] &e&m-------+%nl%&eOnline Players: &f%amount of all players%%nl%&eActive Generators: &f%amount of {-game_generatorsHandler_generatorActiveLocation::*}%%nl%&eActive Machines: &f%(amount of {-game_machinesHandler_machineActiveId::*})%%nl%&e&m+-------&e [Server Information] &e&m-------+" to executor
+
+command /updateBaltop [<text>]:
+	trigger:
+		if executor is not a op:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		send "&bYou have forced balance top leaderboard to update!%nl%&bPlease wait a while for system to caculate results." to executor
+		game_playersHandler_updateTopBalanceList()
+
+command /setBalance [<offline player>] [<number>] [<text>]:
+	trigger:
+		if executor is not a op:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 or arg 2 is not set:
+			send "&cUsage: /setBalance <player> <amount>" to executor
+			stop
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		set {_newAmount} to floor(check [arg 2 >= 1] ? (arg 2) : 0)
+		game_playersHandler_setPlayerBalance((arg 1), {_newAmount})
+		send "&eYou have set &f%game_playersHandler_getPlayerDisplayName(arg 1)%&e's balance to &f$%game_displayHandler_getNumberDigitDisplay({_newAmount})%&e!" to executor
+
+command /setParticularRank [<offline player>] [<text>] [<number>] [<text>]:
+	trigger:
+		if executor is not a op:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 or arg 2 is not set:
+			send "&cUsage: /setParticularRank <player> <rank> [expire_seconds]" to executor
+			stop
+		set {_targetPlayerUUID} to (arg 1's UUID)
+		if {game_playersHandler_playerData::%{_targetPlayerUUID}%} is not set:
+			send "&cNot found player data for this player!" to executor
+			stop
+		if {-game_dataHandler::RANK_PRIORITY_%arg 2%} is not set:
+			send "&cNot found rank with id %arg 2%!" to executor
+			stop
+		if (arg 2) is "MEMBER":
+			game_playersHandler_removePlayerParticularRank(arg 1)
+			send "&eYou have reset &f%game_playersHandler_getPlayerDisplayName(arg 1)%&e's particular rank!" to executor
+		else:
+			if (arg 3) is set:
+				game_playersHandler_setPlayerParticularRank((arg 1), (arg 2 in upper case), (arg 3))
+				send "&eYou have set &f%game_playersHandler_getPlayerDisplayName(arg 1)%&e's particular rank to &f%arg 2 in upper case%&e and expire in &f%game_displayHandler_secondsToTime(arg 3)%&e!" to executor
+			else:
+				game_playersHandler_setPlayerParticularRank((arg 1), (arg 2 in upper case))
+				send "&eYou have set &f%game_playersHandler_getPlayerDisplayName(arg 1)%&e's particular rank to &f%arg 2 in upper case%&e!" to executor
+
+command /override [<text>]:
+	trigger:
+		if executor is not a op:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if {-game_eventHandler::%executor%_OVERRIDE_MODE} is set:
+			delete {-game_eventHandler::%executor%_OVERRIDE_MODE}
+			send "&eYou have &cdisabled &eoverride mode!" to executor
+			stop
+		set {-game_eventHandler::%executor%_OVERRIDE_MODE} to true
+		send "&eYou have &aenabled &eoverride mode!" to executor
+
+command /serverInteraction [<text>] [<offline player>]:
+	trigger:
+		if executor is not console:
+			stop
+		if arg 1 is "VOTE":
+			set {_actionDisplay} to "voting"
+		else if arg 1 is "BOOST":
+			set {_actionDisplay} to "boosting"
+			game_playersHandler_setPlayerParticularRank((arg 2), "BOOSTER", 2592000)
+		send "%nl%&bThanks %game_playersHandler_getPlayerDisplayName(arg 2)% &bfor %{_actionDisplay}% the server!%nl%" to all players
+		game_playersHandler_playSoundToPlayers(all players, "entity.player.levelup")
+		if arg 1 is "VOTE":
+			give game_crateHandler_playerOpenCrate_getRewardItem((arg 2), {-game_dataHandler::VOTE_REWARD}, false, true) to ("%arg 2%" parsed as player)
+		else if arg 1 is "BOOST":
+			send "&bAll players have received &f%game_playersHandler_getPlayerDisplayName(arg 2)%&b's shared rewards from server boosting." to all players
+			loop all players:
+				give game_crateHandler_playerOpenCrate_getRewardItem(loop-player, {-game_dataHandler::BOOST_REWARD}, false, true) to loop-player
+		if (arg 2) is not online:
+			game_playersHandler_addPlayerUnclaimedReward((arg 2), (arg 1))
+
+command /group [<text>] [<text>] [<text>] [<text>]:
+	trigger:
+		if arg 1 is not set:
+			send "&cUsage: /group <create/leave/invite/join/chat/rename/color/kick/disband/setowner/info> <...>" to executor
+			stop
+		if arg 1 is not "CREATE" or "LEAVE" or "INVITE" or "JOIN" or "CHAT" or "RENAME" or "COLOR" or "KICK" or "DISBAND" or "SETOWNER" or "INFO":
+			send "&cUsage: /group <create/leave/invite/join/chat/rename/color/kick/disband/setowner/info> <...>" to executor
+			stop
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		set {_executorUUID} to (executor's UUID)
+		set {_executorGroupId} to game_groupsHandler_getPlayerGroupId({_executorUUID})
+		if arg 1 is "CREATE":
+			set {_groupName} to (arg 2)
+			if {_groupName} is not set:
+				send "&cUsage: /group create <name>" to executor
+				stop
+			if {_executorGroupId} is set:
+				send "&cYou are already in a group!" to executor
+				stop
+			if game_displayHandler_checkAlphanumeric({_groupName}) is false:
+				send "&cYou are only allowed to use letters and numbers in group name!" to executor
+				stop
+			if (length of {_groupName}) > {-game_dataHandler::GROUP_DEFAULT_MAXIMUM_CHARACTERS_IN_NAME}:
+				send "&cMaximum %{-game_dataHandler::GROUP_DEFAULT_MAXIMUM_CHARACTERS_IN_NAME}% characters in group name!" to executor
+				stop
+			if game_groupsHandler_getGroupIdWithName({_groupName}) is set:
+				send "&cSomeone has already owned a group with this name!" to executor
+				stop
+			game_groupsHandler_playerCreateGroup(executor, {_groupName})
+			send "&eYou have successfully created a group named &f%{_groupName}%&e!" to executor
+		else if arg 1 is "LEAVE":
+			if {_executorGroupId} is not set:
+				send "&cYou are not in a group!" to executor
+				stop
+			game_groupsHandler_playerLeaveGroup(executor)
+			send "&eYou have left your group!" to executor
+		else if arg 1 is "INVITE":
+			if arg 2 is not set:
+				send "&cUsage: /group invite <player>" to executor
+				stop
+			if {_executorGroupId} is not set:
+				send "&cYou are not in a group!" to executor
+				stop
+			set {_groupData::*} to game_groupsHandler_getGroupData({_executorGroupId}, "GROUP_OWNER")
+			if {_groupData::1} is not {_executorUUID}:
+				send "&cYou must be the group owner to invite players!" to executor
+				stop
+			set {_invitedPlayer} to (arg 2 parsed as offline player)
+			if game_groupsHandler_checkPlayerInGroup(({_invitedPlayer}'s UUID), {_executorGroupId}) is true:
+				send "&cThe player is already in your group!" to executor
+				stop
+			game_groupsHandler_playerInvitePlayer(executor, {_invitedPlayer}, {_executorGroupId})
+		else if arg 1 is "JOIN":
+			if arg 2 is not set:
+				send "&cUsage: /group join <group>" to executor
+				stop
+			if {_executorGroupId} is set:
+				send "&cYou are already in a group!" to executor
+				stop
+			set {_targetGroupId} to game_groupsHandler_getGroupIdWithName(arg 2)
+			if {_targetGroupId} is not set:
+				send "&cNot found group named %arg 2%!" to executor
+				stop
+			if game_groupsHandler_checkPlayerInvited({_executorUUID}, {_targetGroupId}) is false:
+				send "&cYou are not invited to this group or the invitation has expired!" to executor
+				stop
+			set {_groupData::*} to game_groupsHandler_getGroupData({_targetGroupId}, "GROUP_MEMBERS_AMOUNT")
+			set {_targetGroupMemberCapacity} to game_groupsHandler_getGroupMembersCapacity({_targetGroupId})
+			if ({_groupData::1} parsed as number) >= {_targetGroupMemberCapacity}:
+				send "&cThis group has reached maximum of %{_targetGroupMemberCapacity}% players!" to executor
+				stop
+			game_groupsHandler_playerJoinGroup(executor, {_targetGroupId})
+		else if arg 1 is "CHAT":
+			if {_executorGroupId} is not set:
+				send "&cYou are not in a group!" to executor
+				stop
+			if {-game_groupsHandler::GROUP_CHAT_%{_executorUUID}%} is set:
+				delete {-game_groupsHandler::GROUP_CHAT_%{_executorUUID}%}
+				send "&eYou have &cdisabled &egroup chat!" to executor
+			else:
+				set {-game_groupsHandler::GROUP_CHAT_%{_executorUUID}%} to now
+				send "&eYou have &aenabled &egroup chat!" to executor
+		else if arg 1 is "RENAME":
+			set {_groupName} to (arg 2)
+			if {_groupName} is not set:
+				send "&cUsage: /group rename <name>" to executor
+				stop
+			if {_executorGroupId} is not set:
+				send "&cYou are not in a group!" to executor
+				stop
+			set {_groupData::*} to game_groupsHandler_getGroupData({_executorGroupId}, "GROUP_OWNER")
+			if {_groupData::1} is not {_executorUUID}:
+				send "&cYou must be the group owner to rename the group!" to executor
+				stop
+			if game_displayHandler_checkAlphanumeric({_groupName}) is false:
+				send "&cYou are only allowed to use letters and numbers in group name!" to executor
+				stop
+			if (length of {_groupName}) > {-game_dataHandler::GROUP_DEFAULT_MAXIMUM_CHARACTERS_IN_NAME}:
+				send "&cMaximum %{-game_dataHandler::GROUP_DEFAULT_MAXIMUM_CHARACTERS_IN_NAME}% characters in group name!" to executor
+				stop
+			if game_groupsHandler_getGroupIdWithName({_groupName}) is set:
+				send "&cSomeone has already owned a group with this name!" to executor
+				stop
+			game_groupsHandler_playerRenameGroup({_executorGroupId}, {_groupName})
+		else if arg 1 is "COLOR":
+			if {_executorGroupId} is not set:
+				send "&cYou are not in a group!" to executor
+				stop
+			set {_groupData::*} to game_groupsHandler_getGroupData({_executorGroupId}, "GROUP_OWNER")
+			if {_groupData::1} is not {_executorUUID}:
+				send "&cYou must be the group owner to modify group name color!" to executor
+				stop
+			set {_playerTool} to (executor's tool)
+			set {_playerToolData::*} to game_generatorsHandler_getItemData({_playerTool}, ("Type" and "Color"))
+			if {_playerToolData::1} is not "Group Color Modifier":
+				send "&cYou must be holding a [Group Color Modifier] to modify group name color!" to executor
+				stop
+			if game_playersHandler_removeItemFromPlayerInventory(player, (1 of {_playerTool})) is false:
+				send "&cAn error has occured while using this item, please contant an administrator if u believe this is in error." to player
+				stop
+			game_groupsHandler_playerModifyGroupNameColor({_executorGroupId}, {-game_dataHandler::COLOR_CODE_%{_playerToolData::2}%})
+		else if arg 1 is "KICK":
+			if arg 2 is not set:
+				send "&cUsage: /group kick <player>" to executor
+				stop
+			if {_executorGroupId} is not set:
+				send "&cYou are not in a group!" to executor
+				stop
+			set {_groupData::*} to game_groupsHandler_getGroupData({_executorGroupId}, "GROUP_OWNER")
+			if {_groupData::1} is not {_executorUUID}:
+				send "&cYou must be the group owner to kick players!" to executor
+				stop
+			set {_kickedPlayer} to (arg 2 parsed as offline player)
+			if {_kickedPlayer} is executor:
+				send "&cYou can't kick yourself!" to executor
+				stop
+			if game_groupsHandler_checkPlayerInGroup(({_kickedPlayer}'s UUID), {_executorGroupId}) is false:
+				send "&cThe player is not in your group!" to executor
+				stop
+			game_groupsHandler_playerKickPlayer(executor, {_kickedPlayer}, {_executorGroupId})
+		else if arg 1 is "DISBAND":
+			if {_executorGroupId} is not set:
+				send "&cYou are not in a group!" to executor
+				stop
+			set {_groupData::*} to game_groupsHandler_getGroupData({_executorGroupId}, "GROUP_OWNER")
+			if {_groupData::1} is not {_executorUUID}:
+				send "&cYou must be the group owner to disband your group!" to executor
+				stop
+			game_groupsHandler_playerDisbandGroup({_executorGroupId})
+		else if arg 1 is "SETOWNER":
+			if arg 2 is not set:
+				send "&cUsage: /group setowner <player>" to executor
+				stop
+			if {_executorGroupId} is not set:
+				send "&cYou are not in a group!" to executor
+				stop
+			set {_groupData::*} to game_groupsHandler_getGroupData({_executorGroupId}, "GROUP_OWNER")
+			if {_groupData::1} is not {_executorUUID}:
+				send "&cYou must be the group owner to assign new group owner!" to executor
+				stop
+			set {_newGroupOwner} to (arg 2 parsed as offline player)
+			if {_newGroupOwner} is executor:
+				send "&cYou can't assign yourself as the new group owner!" to executor
+				stop
+			if game_groupsHandler_checkPlayerInGroup(({_newGroupOwner}'s UUID), {_executorGroupId}) is false:
+				send "&cThe assigned player is not in your group!" to executor
+				stop
+			game_groupsHandler_playerAssignGroupOwner({_executorGroupId}, {_newGroupOwner})
+		else if arg 1 is "INFO":
+			if arg 2 is not set:
+				send "&cUsage: /group info <group>" to executor
+				stop
+			set {_targetGroupId} to game_groupsHandler_getGroupIdWithName(arg 2)
+			if {_targetGroupId} is not set:
+				send "&cNot found group named %arg 2%!" to executor
+				stop
+			set {_groupData::*} to game_groupsHandler_getGroupData({_targetGroupId}, ("GROUP_NAME" and "GROUP_OWNER" and "GROUP_CREATED"))
+			set {_groupMembers::*} to game_groupsHandler_getGroupMembers({_targetGroupId})
+			set {_groupOwner} to ({_groupData::2} parsed as offline player)
+			set {_groupCreatedUNIX} to ({_groupData::3} parsed as number)
+			set {_timePassed} to (unixAPI_dateToUnix(now) - {_groupCreatedUNIX})
+			set {_informationDisplay} to "&e&m+-------&e [Group Information] &e&m-------+%nl%&eGroup Name: &f%{_groupData::1}% &7&o(##%{_targetGroupId}%)%nl%&eGroup Owner: &f%game_playersHandler_getPlayerDisplayName({_groupOwner})%%nl%&eCreated: &f%game_displayHandler_secondsToTime({_timePassed})% Ago%nl%&eGroup Members: &f%(amount of {_groupMembers::*})%/%game_groupsHandler_getGroupMembersCapacity({_targetGroupId})%"
+			loop (amount of {_groupMembers::*}) times:
+				set {_loopGroupMember} to ({_groupMembers::%loop-number%} parsed as offline player)
+				set {_informationDisplay} to "%{_informationDisplay}%%nl%&e##%loop-number% %game_playersHandler_getPlayerDisplayName({_loopGroupMember})%"
+			send "%{_informationDisplay}%%nl%&e&m+-------&e [Group Information] &e&m-------+" to executor
+
+command /tutorial [<text>]:
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		set {_executorUUID} to (executor's UUID)
+		if {-game_tutorialHandler::PLAYER_IN_TUTORIAL_%{_executorUUID}%} is set:
+			send "&cYou are already in a tutorial!" to executor
+			stop
+		game_tutorialHandler_playerPlayTutorial(executor, {-game_dataHandler::GAME_TUTORIAL_DATA::*}, "plots")
+
+command /auction [<text>] [<number>] [<number>] [<number>] [<text>]:
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		if arg 1 is not set:
+			send "&cUsage: /auction <start/bid/stop/toggle> <...>" to executor
+			stop
+		if arg 1 is not "START" or "BID" or "STOP" or "TOGGLE":
+			send "&cUsage: /auction <start/bid/stop/toggle> <...>" to executor
+			stop
+		if arg 1 is "START":
+			if arg 2 or arg 3 is not set:
+				send "&cUsage: /auction start <starting bid> <minimum bid increasement> [countdown length]" to executor
+				stop
+			if {-game_eventHandler::AUCTION_DISABLED} is set:
+				if executor is not a op:
+					send "&cPlayer auction has been temporary disabled by an administrator!" to executor
+					stop
+			set {_playerTool} to (executor's tool)
+			set {_startingBid} to floor(arg 2)
+			set {_minimumBidIncreasement} to floor(arg 3)
+			if ({_playerTool}'s name) is not set:
+				send "&cYou must be holding an item to start auction!" to executor
+				stop
+			if {_startingBid} <= 0:
+				send "&cInvalid starting bid price!" to executor
+				stop
+			if {_minimumBidIncreasement} <= 0:
+				send "&cInvalid minimum bid increasement!" to executor
+				stop
+			set {_auctionCountdown} to 60
+			if (arg 4) is set:
+				if executor is not a op:
+					send "&cYou are not allowed to set your own auction countdown!" to executor
+					stop
+				set {_auctionCountdown} to (arg 4)
+			if {-game_auctionHandler::AUCTION_SELLER} is set:
+				send "&cTheres already an auction, please wait until its over!" to executor
+				stop
+			if game_playersHandler_removeItemFromPlayerInventory(player, {_playerTool}) is false:
+				send "&cAn error has occured while starting an auction, please contant an administrator if u believe this is in error." to player
+				stop
+			game_auctionHandler_playerStartAuction(executor, {_playerTool}, {_startingBid}, {_minimumBidIncreasement}, {_auctionCountdown})
+		else if arg 1 is "BID":
+			if arg 2 is not set:
+				set {_bidAmount} to game_auctionHandler_getMinimumBidAmount()
+			else:
+				set {_bidAmount} to floor(arg 2)
+			if {_bidAmount} <= 0:
+				send "&cInvalid bid price!" to executor
+				stop
+			if {-game_auctionHandler::AUCTION_SELLER} is not set:
+				send "&cTheres currently no auction!" to executor
+				stop
+			if {-game_auctionHandler::AUCTION_SELLER} is executor:
+				send "&cYou are not allowed to bid on your own auction!" to executor
+				stop
+			if {-game_auctionHandler::LAST_BID_PLAYER} is executor:
+				send "&cYou are already the last one to bid on the auction!" to executor
+				stop
+			set {_currentMinimumBid} to game_auctionHandler_getMinimumBidAmount()
+			if {_currentMinimumBid} > {_bidAmount}:
+				send "&cYou need to bid at least $%{_currentMinimumBid}%!" to executor
+				stop
+			if game_playersHandler_getPlayerBalance(executor) < {_bidAmount}:
+				send "&cYou don't have enough balance to bid $%{_bidAmount}% on auction!" to executor
+				stop
+			game_auctionHandler_playerBid(executor, {_bidAmount})
+		else if arg 1 is "STOP":
+			if game_permissionHandler_getPlayerPermission(executor, "AUCTION_ADMIN_PERMISSION") <= 0:
+				send "&cYou are not allowed to use this command!" to executor
+				stop
+			if {-game_auctionHandler::AUCTION_SELLER} is not set:
+				send "&cTheres currently no auction!" to executor
+				stop
+			game_auctionHandler_playerStopAuction(executor)
+		else if arg 1 is "TOGGLE":
+			if executor is not a op:
+				send "&cYou are not allowed to use this sub-command!" to executor
+				stop
+			if {-game_eventHandler::AUCTION_DISABLED} is set:
+				delete {-game_eventHandler::AUCTION_DISABLED}
+				send "&eYou have &aenabled &eplayer auction!" to executor
+			else:
+				set {-game_eventHandler::AUCTION_DISABLED} to now
+				send "&eYou have &cdisabled &eplayer auction!" to executor
+
+command /tpa [<offline player>] [<text>]:
+	trigger:
+		if arg 1 is not set:
+			send "&cUsage: /tpa <player>" to executor
+			stop
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		set {_teleportRequestTarget} to (arg 1)
+		if {_teleportRequestTarget} is not online:
+			send "&cTarget player is not online!" to executor
+			stop
+		if {_teleportRequestTarget} is executor:
+			send "&cYou are not allowed to send teleport request to yourself!" to executor
+			stop
+		if game_playerTeleportRequestHandler_checkRequestExist(executor, {_teleportRequestTarget}) is true:
+			send "&cYou have already sended a request to this player!" to executor
+			stop
+		game_playerTeleportRequestHandler_newRequest(executor, {_teleportRequestTarget}, "TELEPORT_TO")
+
+command /tpahere [<offline player>] [<text>]:
+	trigger:
+		if arg 1 is not set:
+			send "&cUsage: /tpahere <player>" to executor
+			stop
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		set {_teleportRequestTarget} to (arg 1)
+		if {_teleportRequestTarget} is not online:
+			send "&cTarget player is not online!" to executor
+			stop
+		if {_teleportRequestTarget} is executor:
+			send "&cYou are not allowed to send teleport request to yourself!" to executor
+			stop
+		if game_playerTeleportRequestHandler_checkRequestExist(executor, {_teleportRequestTarget}) is true:
+			send "&cYou have already sended a request to this player!" to executor
+			stop
+		game_playerTeleportRequestHandler_newRequest(executor, {_teleportRequestTarget}, "TELEPORT_HERE")
+
+command /tpaccept [<offline player>] [<text>]:
+	trigger:
+		if arg 1 is not set:
+			send "&cUsage: /tpaccept <player>" to executor
+			stop
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		set {_teleportRequestRequester} to (arg 1)
+		if {_teleportRequestRequester} is not online:
+			send "&cTarget player is not online!" to executor
+			stop
+		if game_playerTeleportRequestHandler_checkRequestExist({_teleportRequestRequester}, executor) is false:
+			send "&cYou have not received a teleport request from this player!" to executor
+			stop
+		game_playerTeleportRequestHandler_acceptRequest({_teleportRequestRequester}, executor)
+
+command /discord [<text>]:
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		send "&bJoin our discord with link <url:https://discord.gg/ZEzprzN>&fhttps://discord.gg/ZEzprzN<reset>&b!"
+
+command /wgvote [<text>]:
+	trigger:
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_COMMANDS", (10 ticks)) is false:
+			send "&cPlease wait a while before you execute another command!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
+		send "&bVote for the server with link <url:https://playerservers.com/server/WealthGens>&fhttps://playerservers.com/server/WealthGens<reset>&b!"
+
+command /announcement [<text>]:
+	trigger:
+		if executor is not a op:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /announcement <message>" to executor
+			stop
+		send "&b[Announcement] %arg 1%" to all players
+		game_playersHandler_playSoundToPlayers(all players, "entity.player.levelup")
+
+command /wgsc [<text>]:
+	trigger:
+		if game_permissionHandler_getPlayerPermission(executor, "STAFF_CHAT_PERMISSION") <= 0:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if {-game_eventHandler::%executor%_STAFF_CHAT} is set:
+			delete {-game_eventHandler::%executor%_STAFF_CHAT}
+			send "&eYou have &cdisabled &estaff chat!" to executor
+		else:
+			set {-game_eventHandler::%executor%_STAFF_CHAT} to now
+			send "&eYou have &aenabled &estaff chat!" to executor
+
+command /alts [<offline player>] [<text>]:
+	trigger:
+		if game_permissionHandler_getPlayerPermission(executor, "STAFF_CHAT_PERMISSION") <= 0:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		if arg 1 is not set:
+			send "&cUsage: /alts <player>" to executor
+			stop
+		if arg 1 is not online:
+			send "&cPlayer is not online!" to executor
+			stop
+		set {_targetPlayerIp} to (arg 1)'s ip
+		send "&eOnline Players With IP %{_targetPlayerIp}%:" to executor
+		loop all players:
+			if loop-player's ip is {_targetPlayerIp}:
+				send "&e- %loop-player%" to executor
+
+command /stop [<text>]:
+	trigger:
+		if executor is not a op:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		kick all players due to "Server Restarting!"
+		wait 1 second
+		stop server
+
+every 1 tick:
+	set {_operationTimeStarted} to now
+	loop {-game_eventHandler::GENERATOR_LOOT_SPAWN_QUEUE::*}:
+		set {_operationTimeSpend} to (difference between {_operationTimeStarted} and now)
+#		send "&a%{_operationTimeSpend}%" to all players
+		if {_operationTimeSpend} is greater than (0.5 ticks):
+#			send "&dTIME LIMIT REACHED! %amount of {-game_eventHandler::GENERATOR_LOOT_SPAWN_QUEUE::*}% tasks left!" to all players
+			exit 1 loop
+		set {_generatorLocation} to {-game_generatorsHandler_generatorActiveLocation::%loop-value%}
+#		set {_generatorLevel} to {-game_generatorsHandler_generatorActiveLevel::%loop-value%}
+		drop (2 of {-game_generatorsHandler_generatorActiveLoot::%loop-value%}) at (location 1 meter above {_generatorLocation})
+#		send "&eOPERATION COMPLETED -> %loop-value%" to all players
+		delete {-game_eventHandler::GENERATOR_LOOT_SPAWN_QUEUE::%loop-index%}
+#	send "ESCAPED OPERATION -> %{_operationTimeSpend}%" to all players
+
+every 10 seconds:
+	game_generatorsHandler_dropLootAll(2)
+
+every 20 seconds:
+	send "&7&oWatch Dog Detection Executed" to all players where [player input is a op]
+	loop {-game_eventHandler::PLAYER_MESSAGES_COUNT::*}:
+		if loop-value >= 5:
+			set {_loopPlayer} to (loop-index parsed as offline player)
+			set {_playerPreviousChatLogSimilarity} to game_watchdogHandler_playerSpamFlag(loop-index)
+#			send "&7&o[WatchDog Log] %{_loopPlayer}% -> %{_playerPreviousChatLogSimilarity}%%%" to all players where [player input is a op]
+			if {_playerPreviousChatLogSimilarity} is true:
+				system_punishmentSystem_registerPunishment({_loopPlayer}, "CONSOLE", "MUTE", "%system_punishmentSystem_textToSeconds(""1H"")%", "WealthGens WatchDog Detection (Spam)")
+				send "&a[WatchDog] Player &f%game_playersHandler_getPlayerDisplayName({_loopPlayer})%&a has been muted for spamming." to all players
+				wait 4 ticks
+		wait 1 tick
+	delete {-game_eventHandler::PLAYER_MESSAGES_COUNT::*}
+
+#every 1 minute:
+#	execute console command "save-all"
+
+every 2 minutes:
+	set {_chance} to ceil((amount of all players) / 15)
+	set {_buttonSpawnChance} to (random integer between 1 and 3)
+	if {_buttonSpawnChance} <= {_chance}:
+		game_tokenEventHandler_findButtonEvent_newButton()
+
+every 5 minutes:
+	game_playersHandler_updateTopBalanceList()
+	set {_randomAnnouncementIndex} to (random integer between 1 and {-game_dataHandler::SERVER_ANNOUNCEMENT_TOTAL})
+	send "&b[Tip] %{-game_dataHandler::SERVER_ANNOUNCEMENT_%{_randomAnnouncementIndex}%}%" to all players
+#	loop all players:
+#		game_playersHandler_checkPlayerParticularRankExpire(loop-player)
+#		wait 1 tick
+
+#every 30 minutes:
+#	game_generatorsHandler_updateAllActiveGenerators()
+#	game_machinesHandler_updateAllActiveMachines()
+
+#on script load:
+#	wait 5 ticks
+#	game_generatorsHandler_updateAllActiveGenerators()
+#	game_machinesHandler_updateAllActiveMachines()
+
+on join:
+	set join message to "&2► &a%player%"
+	set {_playerUUID} to (player's UUID)
+	if {game_playersHandler_playerData::%{_playerUUID}%} is not set:
+		set {_newToServer} to true
+	if stringDatasAPI_isSet({game_playersHandler_playerData::%{_playerUUID}%}, "BALANCE") is false:
+		game_playersHandler_setPlayerBalance(player, 0)
+	game_generatorsHandler_updatePlayerActiveGenerators(player, "ADD_GENERATOR")
+	wait 5 ticks
+	game_machinesHandler_updatePlayerActiveMachines(player, "ADD_MACHINE")
+	wait 5 ticks
+	if game_boosterHandler_checkPlayerHaveBooster(player) is true:
+		game_boosterHandler_activatePlayerBooster(player)
+	game_playersHandler_checkPlayerParticularRankExpire(player)
+	wait 5 ticks
+	game_playersHandler_updatePlayerTablist(player)
+	game_playersHandler_removePlayerSidebar(player)
+	game_playersHandler_updatePlayerSidebar(player)
+	teleport player to {-game_dataHandler::SERVER_SPAWN}
+	game_playersHandler_playerClaimUnclaimedReward(player, "VOTE")
+	game_playersHandler_playerClaimUnclaimedReward(player, "BOOST")
+	if {_newToServer} is set:
+		give game_generatorsHandler_getGeneratorItem(1) to player
+		loop 5 times:
+			send "&6[Tutorial] &eTutorial Starts In %(6 - loop-number)% Seconds." to player
+			wait 1 second
+		if {-game_tutorialHandler::PLAYER_IN_TUTORIAL_%{_playerUUID}%} is set:
+			stop
+		game_tutorialHandler_playerPlayTutorial(player, {-game_dataHandler::GAME_TUTORIAL_DATA::*}, "plots")
+#	loop all players:
+#		game_eventHandler_updatePlayerVisibility(loop-player)
+#		wait 1 tick
+	set player's gamemode to survival
+	set player's xp to 0
+	set player's health to 10
+	set player's hunger to 10
+
+on quit:
+	set quit message to ""
+	game_generatorsHandler_updatePlayerActiveGenerators(player, "REMOVE_GENERATOR")
+	wait 5 ticks
+	game_machinesHandler_updatePlayerActiveMachines(player, "REMOVE_MACHINE")
+	game_playersHandler_setPlayerLastOnline(player, now)
+	game_playersHandler_removePlayerSidebar(player)
+	if game_boosterHandler_checkPlayerHaveBooster(player) is true:
+		game_boosterHandler_pausePlayerBooster(player)
+
+on chat:
+	if game_cooldownHandler_checkCooldownReady("%player's UUID%_CHAT_MESSAGE_SEND", (10 ticks)) is false:
+		send "&cMessage on cooldown! Please wait a while before sending another message." to player
+		cancel event
+		stop
+	game_cooldownHandler_newCooldown("%player's UUID%_CHAT_MESSAGE_SEND")
+	if system_punishmentSystem_checkPunished((player), "MUTE") is true:
+		send "&cYou are currently muted!" to player
+		cancel event
+		stop
+	set {_playerMessageSplit::*} to message split by " "
+	loop {_playerMessageSplit::*}:
+		if loop-value is "<3":
+			set {_playerMessageSplit::%loop-index%} to "&c❤&f"
+		else if loop-value is "shrug":
+			set {_playerMessageSplit::%loop-index%} to "&e&l¯\_(ツ)_/¯&f"
+		else if loop-value is "GG":
+			set {_playerMessageSplit::%loop-index%} to "&a&lGG&f"
+		else if loop-value is "Cocaine":
+			set {_playerMessageSplit::%loop-index%} to "&e&l&mGud Stuff&f"
+		else if loop-value is "Shit":
+			set {_playerMessageSplit::%loop-index%} to "&d&lPoopie&f"
+		else if loop-value is "[item]" or "[tool]":
+			set {_playerTool} to (player's tool)
+			if ({_playerTool}'s name) is set:
+				set {_playerMessageSplit::%loop-index%} to "&c[Item: %item amount of {_playerTool}%x %uncolored {_playerTool}'s name%]&f"
+		else if loop-value is "[balance]" or "[bal]":
+			set {_playerMessageSplit::%loop-index%} to "&c[Balance: $%game_displayHandler_getNumberDigitDisplay(game_playersHandler_getPlayerBalance(player))%]&f"
+		else if loop-value is "[tokens]":
+			set {_playerMessageSplit::%loop-index%} to "&c[Tokens: ⛂%game_displayHandler_getNumberDigitDisplay(game_playersHandler_getPlayerTokens(player))%]&f"
+	set {_playerMessage} to join {_playerMessageSplit::*} with delimiter " "
+	set {_playerUUID} to (player's UUID)
+	if {-game_eventHandler::%executor%_STAFF_CHAT} is set:
+		cancel event
+		send "&b[Staff Chat] %player%: &f%{_playerMessage}%" to all players where [game_permissionHandler_getPlayerPermission((player input), "STAFF_CHAT_PERMISSION") > 0]
+	else if {-game_groupsHandler::GROUP_CHAT_%{_playerUUID}%} is set:
+		if game_groupsHandler_checkPlayerHaveGroup({_playerUUID}) is true:
+			cancel event
+			set {_playerGroupId} to game_groupsHandler_getPlayerGroupId({_playerUUID})
+			set {_playerGroupName} to game_groupsHandler_getGroupNameWithId({_playerGroupId})
+			game_groupsHandler_sendMessageToGroup({_playerGroupId}, "&a[Group Chat] %player%: &f%{_playerMessage}%")
+			send "&7&o[Group: %{_playerGroupName}%] %player%: %{_playerMessage}%" to all players where [player input is a op]
+			stop
+		delete {-game_groupsHandler::GROUP_CHAT_%{_playerUUID}%}
+		send "&eYour group chat has been &cdisabled &edue to you are no longer in a group!" to player
+	set chat format to "%game_playersHandler_getPlayerLevelDisplay(player)% %game_playersHandler_getPlayerDisplayName(player)% &f%{_playerMessage}%"
+	game_playerLogHandler_newLog({_playerUUID}, "CHAT", message)
+	if {-game_eventHandler::PLAYER_MESSAGES_COUNT::%{_playerUUID}%} is not set:
+		set {-game_eventHandler::PLAYER_MESSAGES_COUNT::%{_playerUUID}%} to 0
+	add 1 to {-game_eventHandler::PLAYER_MESSAGES_COUNT::%{_playerUUID}%}
+
+on place:
+	cancel event
+	set {_playerTool} to (player's tool)
+	if (slot 40 of player's inventory) is not air:
+		send "&cYou are not allowed to place blocks with items in off hand!" to player
+		stop
+	uncancel event
+	set {_itemData::*} to game_generatorsHandler_getItemData({_playerTool}, "Type")
+	if {_itemData::1} is "Loot":
+		cancel event
+	if {_itemData::1} is not "Generator" or "Machine":
+		stop
+	set {_blockPlot} to game_plotsHandler_checkLocationInPlot(game_plotsHandler_newPlotSettings({-game_dataHandler::PLOT_SETTING_ROAD_SIZE}, {-game_dataHandler::PLOT_SETTING_PLOT_SIZE}), (event-block's location))
+	if {_blockPlot} is "ON_ROAD":
+		send "&cYou are not allowed to place %{_itemData::1} in lower case%s on road! (Include area between merged plots)" to player
+		game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+		cancel event
+		stop
+	else if {_blockPlot} is "plots;0;0":
+		cancel event
+		stop
+	if {_itemData::1} is "Generator":
+		set {_plotPlacedAmount} to game_generatorsHandler_generators_plotData_getPlotGeneratorsAmount({_blockPlot})
+		set {_plotMaximumAmount} to game_generatorsHandler_generators_plotData_getPlotMaximumGeneratorsAmount({_blockPlot})
+		set {_playerOwnedAmount} to game_playersHandler_getPlayerOwnedGenerators(player)
+		set {_playerMaximumAmount} to game_playersHandler_getPlayerMaximumGenerators(player)
+	else:
+		set {_plotPlacedAmount} to game_machinesHandler_machines_plotData_getPlotMachinesAmount({_blockPlot})
+		set {_plotMaximumAmount} to game_machinesHandler_machines_plotData_getPlotMaximumMachinesAmount({_blockPlot})
+		set {_playerOwnedAmount} to game_playersHandler_getPlayerOwnedMachines(player)
+		set {_playerMaximumAmount} to game_playersHandler_getPlayerMaximumMachines(player)
+	if {-game_eventHandler::%player%_OVERRIDE_MODE} is not set:
+		if {_plotPlacedAmount} >= {_plotMaximumAmount}:
+			send "&cThe plot have reached the maximum amount of placed %{_itemData::1} in lower case%s! (%{_plotPlacedAmount}%/%{_plotMaximumAmount}%)" to player
+			game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+			cancel event
+			stop
+		if {_playerOwnedAmount} >= {_playerMaximumAmount}:
+			send "&cYou have reached the maximum amount of placed %{_itemData::1} in lower case%s! (%{_playerOwnedAmount}%/%{_playerMaximumAmount}%)" to player
+			game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+			cancel event
+			stop
+	set {_coolDown} to game_cooldownHandler_checkCooldownReady("%player's UUID%_INTERACTION", (10 ticks))
+	if game_cooldownHandler_checkCooldownReady("%player's UUID%_INTERACTION", (10 ticks)) is false:
+		if game_cooldownHandler_checkCooldownReady("%player's UUID%_INTERACTION_COOLDOWN_MESSAGE", (3 seconds)) is true:
+			send "&cPlease wait a while before you interact with %{_itemData::1} in lower case%s again!" to player
+			game_cooldownHandler_newCooldown("%player's UUID%_INTERACTION_COOLDOWN_MESSAGE")
+		cancel event
+		stop
+	game_cooldownHandler_newCooldown("%player's UUID%_INTERACTION")
+	if {_itemData::1} is "Generator":
+		set {_generatorData::*} to game_generatorsHandler_getItemData({_playerTool}, ("Level" and "Enhanced"))
+		set {_generatorName} to {-game_dataHandler::GENERATOR_NAME_%{_generatorData::1}%}
+		set {_enhancedText} to (check [{_generatorData::2} is "IS_SET"] ? " (&6Enhanced&e)" : "")
+		if {_generatorName} is set:
+			game_generatorsHandler_newPlayerGenerator(player, (event-block's location), ({_generatorData::1} parsed as number), (check [{_generatorData::2} is "IS_SET"]))
+			wait 1 tick
+			break event-block naturally
+			set block at (event-block's location) to {-game_dataHandler::GENERATOR_BLOCK_%{_generatorData::1}%}
+			send "&eYou have placed a &f%{_generatorName}%&e! &e(&fLevel %{_generatorData::1}%&e)%{_enhancedText}%" to player
+			send title "&a&lPlaced Generator" with subtitle "&eYou have placed a &f&l%{_generatorName}%" to player for 2 seconds with 0 tick fadein and 0 tick fadeout
+	else:
+		set {_machineData::*} to game_generatorsHandler_getItemData({_playerTool}, ("Level" and "Machine Type"))
+		set {_machineType} to {_machineData::2} in upper case
+		replace all " " with "_" in {_machineType}
+		set {_machineName} to "%{_machineData::2}% Machine"
+		game_machinesHandler_newPlayerMachine(player, (event-block's location), {_machineType}, ({_machineData::1} parsed as number))
+		wait 1 tick
+		break event-block naturally
+		set block at (event-block's location) to {-game_dataHandler::MACHINE_BLOCK_%{_machineType}%_%{_machineData::1}%}
+		send "&eYou have placed a &f%{_machineName}%&e! &e(&fLevel %{_machineData::1}%&e)" to player
+		send title "&a&lPlaced Machine" with subtitle "&eYou have placed a &f&l%{_machineName}%" to player for 2 seconds with 0 tick fadein and 0 tick fadeout
+	game_playersHandler_updatePlayerSidebar_playersInPlot({_blockPlot})
+	game_playersHandler_playSoundToPlayers(player, "entity.player.levelup")
+
+on break:
+	if game_generatorsHandler_checkBlockIsGenerator(event-block's location) is true:
+		send "&cYou are not allowed to break generators!%nl%&c&lLeft click &cwhile &c&lsneaking &cto pick up the generator." to player
+	else if game_machinesHandler_checkBlockIsMachine(event-block's location) is true:
+		send "&cYou are not allowed to break machines!%nl%&c&lLeft click &cwhile &c&lsneaking &cto pick up the machine." to player
+	else:
+		stop
+	cancel event
+	game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+
+on leftclick:
+	set {_targetBlock} to (clicked block)
+	if {_targetBlock} is not set:
+		stop
+	else if {_targetBlock} is (FLOOR HEAD):
+		set {_targetBlockCrate} to game_crateHandler_checkBlockAtLocationCrate(({_targetBlock}'s location))
+		if {_targetBlockCrate} is not "NONE":
+			cancel event
+			game_crateHandler_playerViewCrate(player, {_targetBlockCrate})
+			stop
+	if game_generatorsHandler_checkBlockIsGenerator(({_targetBlock}'s location)) is true:
+		set {_targetBlockType} to "GENERATOR"
+	else if game_machinesHandler_checkBlockIsMachine(({_targetBlock}'s location)) is true:
+		set {_targetBlockType} to "MACHINE"
+	if {_targetBlockType} is not set:
+		stop
+	if player is not sneaking:
+		stop
+	cancel event
+	if {_targetBlockType} is "GENERATOR":
+		set {_targetBlockData::*} to game_generatorsHandler_getGeneratorData(game_generatorsHandler_locationToText(({_targetBlock}'s location)), ("GENERATOR_OWNER"))
+	else:
+		set {_targetBlockData::*} to game_machinesHandler_getMachineData(game_generatorsHandler_locationToText(({_targetBlock}'s location)), ("MACHINE_OWNER"))
+	set {_targetBlockOwner} to ({_targetBlockData::1} parsed as offline player)
+	if {-game_eventHandler::%player%_OVERRIDE_MODE} is not set:
+		if {_targetBlockData::1} is not (player's UUID):
+			send "&cThis %{_targetBlockType} in lower case% is owned by %{_targetBlockOwner}%!" to executor
+			game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+			stop
+	if game_cooldownHandler_checkCooldownReady("%player's UUID%_INTERACTION", (10 ticks)) is false:
+		if game_cooldownHandler_checkCooldownReady("%player's UUID%_INTERACTION_COOLDOWN_MESSAGE", (3 seconds)) is true:
+			send "&cPlease wait a while before you interact with %{_targetBlockType} in lower case% again!" to player
+			game_cooldownHandler_newCooldown("%player's UUID%_INTERACTION_COOLDOWN_MESSAGE")
+		stop
+	game_cooldownHandler_newCooldown("%player's UUID%_INTERACTION")
+	if {_targetBlockType} is "GENERATOR":
+		game_playerControlPanelHandler_panelGUI_editGenerator_playerRemoveGenerator(player, player, game_generatorsHandler_locationToText(({_targetBlock}'s location)))
+	else:
+		game_playerControlPanelHandler_panelGUI_editMachine_playerRemoveMachine(player, player, game_generatorsHandler_locationToText(({_targetBlock}'s location)))
+	game_playersHandler_playSoundToPlayers(player, "block.piston.contract")
+
+on rightclick:
+	set {_playerTool} to (player's tool)
+	set {_playerHotbarSlot} to (current hotbar slot of player)
+	set {_targetBlock} to (clicked block)
+	set {_playerUUID} to (player's UUID)
+	set {_playerToolData::*} to game_generatorsHandler_getItemData({_playerTool}, "Type")
+	if {_playerToolData::1} is "Token Voucher":
+		set {_sellwandData::*} to game_generatorsHandler_getItemData({_playerTool}, "Tokens")
+		set {_voucherAmount} to ({_sellwandData::1} parsed as number)
+		if game_playersHandler_removeItemFromPlayerInventory(player, (1 of {_playerTool})) is false:
+			send "&cAn error has occured while using this item, please contant an administrator if u believe this is in error." to player
+			stop
+		send "&eYou have successfully redeemed &f%{_voucherAmount}% &etokens!" to player
+		game_playersHandler_setPlayerTokens(player, (game_playersHandler_getPlayerTokens(player) + {_voucherAmount}), true)
+		stop
+	if {_targetBlock} is not set:
+		stop
+	else if {_targetBlock} is (FLOOR HEAD):
+		set {_targetBlockCrate} to game_crateHandler_checkBlockAtLocationCrate(({_targetBlock}'s location))
+		if {_targetBlockCrate} is not "NONE":
+			set {_targetBlockCrateName} to game_crateHandler_getCrateName({_targetBlockCrate})
+			cancel event
+			if {_playerToolData::1} is not "Crate Key":
+				send "&cYou must be holding a [%{_targetBlockCrateName}% Key] to open the crate!" to player
+				game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+				stop
+			set {_crateKeyData::*} to game_generatorsHandler_getItemData({_playerTool}, "Crate")
+			if {_crateKeyData::1} is not {_targetBlockCrateName}:
+				send "&cYou must be holding a [%{_targetBlockCrateName}% Key] to open the crate!" to player
+				game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+				stop
+			if {-game_crateHandler::%{_playerUUID}%_CURRENT_OPENING_CRATE} is set:
+				send "&cYou are already opening a crate!" to player
+				game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+				stop
+			if game_playersHandler_removeItemFromPlayerInventory(player, (1 of {_playerTool})) is false:
+				send "&cAn error has occured while using this item, please contant an administrator if u believe this is in error." to player
+				stop
+			game_crateHandler_playerOpenCrate(player, {_targetBlockCrate})
+			stop
+	else if {_targetBlock} is (STONE BUTTON):
+		game_tokenEventHandler_findButtonEvent_confirmPlayerFindButton(player, ({_targetBlock}'s location))
+		stop
+	if {_playerToolData::1} is "Sell Wand":
+		cancel event
+		set {_sellwandData::*} to game_generatorsHandler_getItemData({_playerTool}, ("Multiplier" and "Durability"))
+		if {_targetBlock} is not chest or trapped chest:
+			send "&cYou are only allowed to sell items in chest with sellwand!" to player
+			game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+			stop
+		set {_sellWandMultiplier} to ({_sellwandData::1} parsed as number)
+		set {_sellWandSellData::*} to game_sellwandHandler_sellInventoryWithMultiplier(({_targetBlock}'s inventory), {_sellWandMultiplier})
+		if {_sellWandSellData::1} <= 0:
+			send "&cTheres nothing to sell in the chest!" to player
+			game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+			stop
+		game_economyHandler_playerSoldItems(player, {_sellWandSellData::1}, {_sellWandSellData::2}, {_sellWandMultiplier})
+		game_playersHandler_playSoundToPlayers(player, "entity.player.levelup")
+		set {_oldDurabilityData::*} to {_sellwandData::2} split by "/"
+		set {_remainDurability} to (({_oldDurabilityData::1} parsed as number) - 1)
+		if {_remainDurability} <= 0:
+			set {_playerTool}'s item amount to (({_playerTool}'s item amount) - 1)
+			send "&cYour sellwand has broke!" to player
+			play sound "entity.item.break" with volume 99999 and pitch 1 at (player's location) for player
+			stop
+		game_sellwandHandler_wandSetDurability(player, {_playerHotbarSlot}, {_playerTool}, {_remainDurability})
+		stop
+	else if {_playerToolData::1} is "Generator Enhancer":
+		cancel event
+	if game_generatorsHandler_checkBlockIsGenerator(({_targetBlock}'s location)) is false:
+		if {_playerToolData::1} is "Generator Enhancer":
+			send "&cThis item can only be used on generators!" to player
+			game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+		stop
+	if player is not sneaking:
+		if {_playerToolData::1} is not "Generator Enhancer":
+			stop
+	cancel event
+	if game_cooldownHandler_checkCooldownReady("%player's UUID%_INTERACTION", (10 ticks)) is false:
+		if game_cooldownHandler_checkCooldownReady("%player's UUID%_INTERACTION_COOLDOWN_MESSAGE", (3 seconds)) is true:
+			send "&cPlease wait a while before you do this again!" to player
+			game_cooldownHandler_newCooldown("%player's UUID%_INTERACTION_COOLDOWN_MESSAGE")
+		stop
+	game_cooldownHandler_newCooldown("%player's UUID%_INTERACTION")
+	set {_generatorLocationText} to game_generatorsHandler_locationToText({_targetBlock}'s location)
+	set {_oldGeneratorData::*} to game_generatorsHandler_getGeneratorData({_generatorLocationText}, "GENERATOR_OWNER")
+	set {_oldGeneratorOwner} to ({_oldGeneratorData::1} parsed as offline player)
+	if {-game_eventHandler::%player%_OVERRIDE_MODE} is not set:
+		if {_oldGeneratorData::1} is not (player's UUID):
+			send "&cThis generator is owned by %{_oldGeneratorOwner}%!" to executor
+			game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+			stop
+	if {_playerToolData::1} is "Generator Enhancer":
+		set {_generatorEnhancerData::*} to game_generatorsHandler_getItemData({_playerTool}, "Enhanceable Level")
+		set {_generatorEnhancerEnhancableLevelSplit::*} to {_generatorEnhancerData::1} split by "~"
+		set {_generatorEnhanceData::*} to game_generatorsHandler_getGeneratorData({_generatorLocationText}, ("GENERATOR_LEVEL" and "GENERATOR_ENHANCED"))
+		if ({_generatorEnhancerEnhancableLevelSplit::1} parsed as number) > ({_generatorEnhanceData::1} parsed as number):
+			set {_outOfEnhancableLevelRange} to true
+		else if ({_generatorEnhanceData::1} parsed as number) > ({_generatorEnhancerEnhancableLevelSplit::2} parsed as number):
+			set {_outOfEnhancableLevelRange} to true
+		if {_outOfEnhancableLevelRange} is set:
+			send "&cThis generator enhancer can only enhance generators with level between %{_generatorEnhancerEnhancableLevelSplit::1}% and %{_generatorEnhancerEnhancableLevelSplit::2}%!" to player
+			game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+			stop
+		if {_generatorEnhanceData::2} is "TRUE":
+			send "&cThis generator is already enhanced!" to player
+			game_playersHandler_playSoundToPlayers(player, "entity.villager.no")
+			stop
+		if game_playersHandler_removeItemFromPlayerInventory(player, (1 of {_playerTool})) is false:
+			send "&cAn error has occured while using this item, please contant an administrator if u believe this is in error." to player
+			stop
+		game_playerControlPanelHandler_panelGUI_editGenerator_playerEnhanceGenerator(player, {_generatorLocationText})
+		game_playersHandler_playSoundToPlayers(player, "entity.player.levelup")
+		stop
+	game_playerControlPanelHandler_panelGUI_editGenerator_playerUpgradeGenerator(player, player, {_generatorLocationText})
+	game_playersHandler_playSoundToPlayers(player, "entity.player.levelup")
+
+on prepare craft:
+	loop 9 times:
+		set {_loopSlot} to loop-number
+		set {_loopItem} to (slot {_loopSlot} of event-inventory)
+		if {_loopItem} is not air:
+			set {_loopItemData::*} to game_generatorsHandler_getItemData({_loopItem}, "Type")
+			if {_loopItemData::1} is not "BLOCK" or "MATERIAL":
+				set {_illegalCraftingMaterial} to true
+	if {_illegalCraftingMaterial} is set:
+		set slot 0 of event-inventory to air
+		stop
+	set {_craftItem} to (slot 0 of event-inventory)
+	set {_craftItemId} to (id of type of {_craftItem})
+	if {-game_dataHandler::CRAFTING_BLACKLISTED_ITEM_ID_%{_craftItemId}%} is set:
+		set slot 0 of event-inventory to air
+		stop
+	set slot 0 of event-inventory to game_displayHandler_rawItemTypeLabel({_craftItem})
+
+on smelt:
+	cancel event
+
+on enchant:
+	cancel event
+
+on fish:
+	cancel event
+
+on inventory click:
+	if inventory name of current inventory of player is "&eChest" or "&eTrapped Chest" or "&eHopper" or "container.crafting" or "container.chest":
+		stop
+	cancel event
+
+on inventory close:
+	set {_playerUUID} to (player's UUID)
+	if {-game_playerControlPanelHandler::%{_playerUUID}%_GUI_LOADING_ID} is set:
+		delete {-game_playerControlPanelHandler::%{_playerUUID}%_GUI_LOADING_ID}
+	if {-game_crateHandler::%{_playerUUID}%_GUI_LOADING_ID} is set:
+		delete {-game_crateHandler::%{_playerUUID}%_GUI_LOADING_ID}
+
+on item spawn:
+	set {_droppedItem} to event-item
+	if {_droppedItem}'s lore is "":
+		game_displayHandler_rawItemTypeLabel({_droppedItem})
+
+on plot enter:
+	wait 1 tick
+	game_playersHandler_updatePlayerSidebar(player)
+
+on plot leave:
+	wait 1 tick
+	game_playersHandler_updatePlayerSidebar(player)
+
+on plot claim:
+	set {_plotId} to "%method ""getPlot""%"
+	game_plotsHandler_plotClaim({_plotId}, player)
+
+on plot delete:
+	set {_plotId} to "%method ""getPlot""%"
+	game_plotsHandler_plotDelete({_plotId})
+	game_generatorsHandler_removePlotGenerator({_plotId})
+	game_machinesHandler_removePlotMachine({_plotId})
+
+on plot clear:
+	set {_plotId} to "%method ""getPlot""%"
+	game_generatorsHandler_removePlotGenerator({_plotId})
+	game_machinesHandler_removePlotMachine({_plotId})
+
+#on plot merge:
+#	set {_plotId} to "%method ""getPlot""%"
+#	set {_plotMergeDirection} to method "getDir"
+#	send "%{_plotId}% / %{_plotMergeDirection}%" to all players
+
+#on plot auto merge:
+#	set {_plotsIdText} to "%method ""getPlots""%"
+#	replace all "[" and "]" with "" in {_plotsIdText}
+#	set {_plotsId::*} to {_plotsIdText} split by ", "
+#	send "%{_plotsId::*}%" to all players
+
+on plot unmerge:
+	set {_plotsWorldText} to "%method ""getWorld""%"
+	set {_plotsIdText} to "%method ""getPlots""%"
+	replace all "[" and "]" with "" in {_plotsIdText}
+	set {_plotsId::*} to {_plotsIdText} split by ", "
+	loop {_plotsId::*}:
+		set {_plotsId::%loop-index%} to "%{_plotsWorldText}%;%{_plotsId::%loop-index%}%"
+#		send "execute: %{_plotsId::%loop-index%}%" to all players
+		game_generatorsHandler_removePlotGenerator({_plotsId::%loop-index%})
+		game_machinesHandler_removePlotMachine({_plotsId::%loop-index%})
+
+on plot change owner:
+	set {_plotId} to "%method ""getPlot""%"
+	#
+	# Somehow getNewOwner() is returning old owner while getOldOwner() is returning new owner...
+	#
+	set {_plotOldOwnerUUID} to method "getOldOwner"
+	game_plotsHandler_plotChangeOwner({_plotId}, "%{_plotOldOwnerUUID}%")
+
+on damage:
+	if victim is not a player:
+		stop
+	cancel event
+
+on hunger meter change:
+	cancel event
+
+on piston extend:
+	if game_eventHandler_pistonActionBlockMovementAllowCheck(moved blocks) is false:
+		cancel event
+
+on piston retract:
+	if game_eventHandler_pistonActionBlockMovementAllowCheck(moved blocks) is false:
+		cancel event
+
+function game_eventHandler_pistonActionBlockMovementAllowCheck(movedBlocks: blocks) :: boolean:
+	loop {_movedBlocks::*}:
+		if game_generatorsHandler_checkBlockIsGenerator(loop-value's location) is true:
+			return false
+		else if game_machinesHandler_checkBlockIsMachine(loop-value's location) is true:
+			return false
+	return true
+
+function game_eventHandler_updatePlayerVisibility(player: offline player):
+	loop all players:
+		if loop-player is not {_player}:
+			if {-game_eventHandler::%loop-player%_VANISH_MODE} is set:
+				hide loop-player from {_player}
+			else:
+				reveal loop-player to {_player}

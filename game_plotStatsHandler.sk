@@ -1,0 +1,29 @@
+function game_plotStatsHandler_updatePlotActiveMachineStats(plot: text, updatePlotActiveGenerators: boolean):
+	set {_plotActiveMachineStats::*} to game_machinesHandler_getPlotActiveMachineStats({_plot})
+	game_plotStatsHandler_removePlotActiveMachineStats({_plot})
+	loop ((amount of {_plotActiveMachineStats::*}) / 2) times:
+		set {_loopStatNameIndex} to (loop-number * 2 - 1)
+		set {_loopStatValueIndex} to  (loop-number * 2)
+		set {_loopStatName} to {_plotActiveMachineStats::%{_loopStatNameIndex}%}
+		set {_loopStatValue} to {_plotActiveMachineStats::%{_loopStatValueIndex}%}
+		set {_plotDataIncludedStatTypesText} to {game_machinesHandler_plotActiveMachineStats::%{_plot}%_INCLUDED_STAT_TYPES}
+		set {game_machinesHandler_plotActiveMachineStats::%{_plot}%_INCLUDED_STAT_TYPES} to (check [{_plotDataIncludedStatTypesText} is set] ? "%{_plotDataIncludedStatTypesText}%,%{_loopStatName}%" : {_loopStatName})
+		set {game_machinesHandler_plotActiveMachineStats::%{_plot}%_%{_loopStatName}%} to ({-game_dataHandler::PLOT_STAT_DEFAULT_VALUE::%{_loopStatName}%} + {_loopStatValue})
+	if {_updatePlotActiveGenerators} is true:
+		set {_plotGenerators::*} to game_generatorsHandler_generators_plotData_getPlotGenerators({_plot})
+		set {_loopNumber} to 0
+		loop {_plotGenerators::*}:
+			add 1 to {_loopNumber}
+			if game_generatorsHandler_isActiveGenerator(loop-value) is true:
+				game_generatorsHandler_updateActiveGenerator_lootWorthMultiplier(loop-value)
+			if ({_loopNumber} / 10) is floor({_loopNumber} / 10):
+				wait 1 tick
+
+function game_plotStatsHandler_removePlotActiveMachineStats(plot: text):
+	set {_plotDataIncludedStatTypes::*} to {game_machinesHandler_plotActiveMachineStats::%{_plot}%_INCLUDED_STAT_TYPES} split by ","
+	loop {_plotDataIncludedStatTypes::*}:
+		delete {game_machinesHandler_plotActiveMachineStats::%{_plot}%_%loop-value%}
+
+function game_plotStatsHandler_getPlotActiveMachineStat(plot: text, machineStatType: text, defaultReturnValue: object = false) :: object:
+	set {_plotActiveMachineStat} to {game_machinesHandler_plotActiveMachineStats::%{_plot}%_%{_machineStatType}%}
+	return (check [{_plotActiveMachineStat} is set] ? {_plotActiveMachineStat} : {_defaultReturnValue})

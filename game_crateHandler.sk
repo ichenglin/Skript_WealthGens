@@ -1,0 +1,159 @@
+function game_crateHandler_checkBlockAtLocationCrate(location: location) :: text:
+	set {_location} to (block at {_location}'s location)
+	set {_locationPlot} to game_plotsHandler_checkLocationInPlot(game_plotsHandler_newPlotSettings({-game_dataHandler::PLOT_SETTING_ROAD_SIZE}, {-game_dataHandler::PLOT_SETTING_PLOT_SIZE}), {_location})
+	if {_locationPlot} is not {-game_dataHandler::CRATE_IN_PLOT}:
+		return "NONE"
+	set {_loopCrateDataIndex} to 0
+	while (true):
+		add 1 to {_loopCrateDataIndex}
+		if {-game_dataHandler::CRATE_LOCATION_%{_loopCrateDataIndex}%} is not set:
+			exit 1 loop
+		set {_loopLocation} to (block at {-game_dataHandler::CRATE_LOCATION_%{_loopCrateDataIndex}%}'s location)
+		if {_loopLocation} is {_location}:
+			return {-game_dataHandler::CRATE_TYPE_%{_loopCrateDataIndex}%}
+	return "NONE"
+
+function game_crateHandler_playerOpenCrate(player: offline player, crateId: text):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {-game_crateHandler::%{_playerUUID}%_CURRENT_OPENING_CRATE} to {_crateId}
+	set {_crateRewardChanceData::*} to game_crateHandler_playerOpenCrate_getCrateRewardChanceData({_crateId})
+	loop 20 times:
+		set {_loopRandomReward} to game_crateHandler_playerOpenCrate_getRandomRewardWithChance({_crateRewardChanceData::*})
+		set {_randomRewardList::%loop-number%} to {_loopRandomReward}
+		if floor(loop-number / 5) is (loop-number / 5):
+			wait 1 tick
+	set {_crateName} to game_crateHandler_getCrateName({_crateId})
+	set {_guiId} to game_groupsHandler_system_getRandomConfirmationCode(16)
+	game_crateHandler_playerOpenCrate_menuSetup({_player}, {_crateName}, true)
+	set {-game_crateHandler::%{_playerUUID}%_GUI_LOADING_ID} to {_guiId}
+	loop 60 times:
+		if {-game_crateHandler::%{_playerUUID}%_GUI_LOADING_ID} is {_guiId}:
+			set {_loopRewardIndex} to (mod((loop-number - 1), 20) + 1)
+			game_playersHandler_playSoundToPlayers({_player}, "entity.experience_orb.pickup")
+			loop 7 times:
+				set {_loopDisplayIndex} to ({_loopRewardIndex} - 4 + (loop-number-2))
+				set {_loopDisplayIndex} to (check [{_loopDisplayIndex} <= 0] ? ({_loopDisplayIndex} + 20) : {_loopDisplayIndex})
+				set {_loopDisplayIndex} to (check [{_loopDisplayIndex} > 20] ? ({_loopDisplayIndex} - 20) : {_loopDisplayIndex})
+				format a gui slot (18 + loop-number-2) of {_player} with game_crateHandler_playerOpenCrate_getRewardItem({_null}, {_randomRewardList::%{_loopDisplayIndex}%}) to do nothing
+		wait 2 ticks
+	give game_crateHandler_playerOpenCrate_getRewardItem({_player}, {_randomRewardList::20}, false, true) to {_player}
+	game_playersHandler_playSoundToPlayers({_player}, "entity.player.levelup")
+	delete {-game_crateHandler::%{_playerUUID}%_CURRENT_OPENING_CRATE}
+
+function game_crateHandler_playerViewCrate(player: offline player, crateId: text):
+	set {_crateName} to game_crateHandler_getCrateName({_crateId})
+	game_crateHandler_playerOpenCrate_menuSetup({_player}, "%{_crateName}% Preview")
+	set {_crateRewardChanceData::*} to game_crateHandler_playerOpenCrate_getCrateRewardChanceData({_crateId})
+	set {_previousItemTotalChance} to 0
+	loop ((amount of {_crateRewardChanceData::*}) / 2) times:
+		set {_loopChanceIndex} to ((loop-number * 2) - 1)
+		set {_loopRewardIndex} to (loop-number * 2)
+		set {_loopRewardDisplayChance} to ({_crateRewardChanceData::%{_loopChanceIndex}%} - {_previousItemTotalChance})
+		set {_loopRewardDisplayItem} to game_crateHandler_playerOpenCrate_getRewardItem({_null}, {_crateRewardChanceData::%{_loopRewardIndex}%})
+		set {_loopRewardDisplayItem}'s lore to "&f||&bObtain Chance: &f%{_loopRewardDisplayChance}%%%||%{_loopRewardDisplayItem}'s lore%"
+		set {_loopRewardDisplaySlot} to (loop-number + (floor((loop-number - 1) / 7) * 2) + 9)
+		format a gui slot {_loopRewardDisplaySlot} of {_player} with {_loopRewardDisplayItem} to do nothing
+		set {_previousItemTotalChance} to {_crateRewardChanceData::%{_loopChanceIndex}%}
+
+function game_crateHandler_playerOpenCrate_getRandomRewardWithChance(crateRewardChanceData: objects) :: text:
+	set {_randomChance} to (random number between 0 and 100)
+	loop ((amount of {_crateRewardChanceData::*}) / 2) times:
+		set {_loopChanceIndex} to ((loop-number * 2) - 1)
+		if {_randomChance} <= {_crateRewardChanceData::%{_loopChanceIndex}%}:
+			set {_loopRewardIndex} to (loop-number * 2)
+			return {_crateRewardChanceData::%{_loopRewardIndex}%}
+
+function game_crateHandler_playerOpenCrate_getCrateRewardChanceData(crateId: text) :: objects:
+	loop {-game_dataHandler::CRATE_REWARD_ITEM_%{_crateId}%::*}:
+		add (loop-index parsed as number) to {_dataReturn::*}
+		add loop-value to {_dataReturn::*}
+	return {_dataReturn::*}
+
+function game_crateHandler_playerOpenCrate_getRewardItem(player: offline player, rewardId: text, displayItem: boolean = true, announceRewardToPlayer: boolean = false) :: item:
+	set {_rewardIdData::*} to {_rewardId} split by ":"
+	if {_rewardIdData::1} is "GENERATOR_ITEM":
+		set {_generatorLevel} to ({_rewardIdData::2} parsed as number)
+		set {_displayAmount} to ({_rewardIdData::3} parsed as number)
+		set {_returnItem} to game_generatorsHandler_getGeneratorItem({_generatorLevel})
+		set {_displayName} to ({_returnItem}'s name)
+		if {_displayItem} is true:
+			set {_originalItem} to {_returnItem}
+			set {_returnItem} to game_playerControlPanelHandler_generatorDisplay_getLootFromGeneratorLevel({_generatorLevel})
+			set {_returnItem}'s name to ({_originalItem}'s name)
+			set {_returnItem}'s lore to ({_originalItem}'s lore)
+	else if {_rewardIdData::1} is "MACHINE_ITEM":
+		set {_machineType} to {_rewardIdData::2}
+		set {_machineLevel} to ({_rewardIdData::3} parsed as number)
+		set {_displayAmount} to ({_rewardIdData::4} parsed as number)
+		set {_returnItem} to game_machinesHandler_getMachineItem({_machineType}, {_machineLevel})
+		set {_displayName} to "%{_returnItem}'s name% (Level: %{_machineLevel}%)"
+		if {_displayItem} is true:
+			set {_originalItem} to {_returnItem}
+			set {_returnItem} to game_playerControlPanelHandler_machineDisplay_getMachineBlockItem({_machineType}, {_machineLevel})
+			set {_returnItem}'s name to ({_originalItem}'s name)
+			set {_returnItem}'s lore to ({_originalItem}'s lore)
+	else if {_rewardIdData::1} is "SELL_WAND_ITEM":
+		set {_sellwandMultiplier} to ({_rewardIdData::2} parsed as number)
+		set {_sellwandDurability} to ({_rewardIdData::3} parsed as number)
+		set {_displayAmount} to ({_rewardIdData::4} parsed as number)
+		set {_returnItem} to game_sellwandHandler_getWand({_sellwandMultiplier}, {_sellwandDurability}, {_sellwandDurability})
+		set {_displayName} to ({_returnItem}'s name)
+	else if {_rewardIdData::1} is "GENERATOR_ENHANCER_ITEM":
+		set {_generatorEnhancerMinimumLevel} to ({_rewardIdData::2} parsed as number)
+		set {_generatorEnhancerMaximumLevel} to ({_rewardIdData::3} parsed as number)
+		set {_displayAmount} to ({_rewardIdData::4} parsed as number)
+		set {_returnItem} to game_generatorsHandler_getGeneratorEnhancerItem({_generatorEnhancerMinimumLevel}, {_generatorEnhancerMaximumLevel})
+		set {_displayName} to "%{_returnItem}'s name% (Enhanceable: %{_generatorEnhancerMinimumLevel}%~%{_generatorEnhancerMaximumLevel}%)"
+	else if {_rewardIdData::1} is "CRATE_KEY_ITEM":
+		set {_crateType} to {_rewardIdData::2}
+		set {_displayAmount} to ({_rewardIdData::3} parsed as number)
+		set {_returnItem} to game_crateHandler_getCrateKey({_crateType})
+		set {_displayName} to ({_returnItem}'s name)
+	else if {_rewardIdData::1} is "TOKEN_VOUCHER":
+		set {_voucherTokensWorth} to ({_rewardIdData::2} parsed as number)
+		set {_displayAmount} to ({_rewardIdData::3} parsed as number)
+		set {_returnItem} to game_playersHandler_getTokenVoucherItem({_voucherTokensWorth})
+		set {_displayName} to ({_returnItem}'s name)
+	else if {_rewardIdData::1} is "PLAYER_BOOSTER":
+		set {_boosterType} to {_rewardIdData::2}
+		set {_boosterName} to {_boosterType}
+		replace all "_" with " " in {_boosterName}
+		set {_boosterName} to game_displayHandler_uppercaseLeadingLetter({_boosterName})
+		set {_boosterValue} to ({_rewardIdData::3} parsed as number)
+		set {_boosterTimeLength} to ({_rewardIdData::4} parsed as number)
+		set {_displayAmount} to 1
+		set {_boosterTimeLengthDisplay} to game_displayHandler_secondsToTime({_boosterTimeLength})
+		set {_displayName} to "%{_boosterValue}%x %{_boosterName}% Booster (%{_boosterTimeLengthDisplay}%)"
+		if {_displayItem} is true:
+			set {_returnItem} to (POTION named "&e%{_boosterValue}%x %{_boosterName}% Booster" with lore "&f||&eType: &fBooster||&f||&eBooster Type: &f%{_boosterName}%||&eTime Length: &f%{_boosterTimeLengthDisplay}%" with no NBT)
+		else:
+			game_boosterHandler_applyPlayerBooster({_player}, {_boosterType}, {_boosterValue}, {_boosterTimeLength})
+	else if {_rewardIdData::1} is "GROUP_COLOR_MODIFIER":
+		set {_modifierColor} to {_rewardIdData::2}
+		set {_displayAmount} to ({_rewardIdData::3} parsed as number)
+		set {_returnItem} to game_groupsHandler_getGroupColorModifierItem({_modifierColor})
+		set {_displayName} to ({_returnItem}'s name)
+	if {_announceRewardToPlayer} is true:
+		send "&eYou have received &f[%uncolored {_displayName}%] x%{_displayAmount}%&e!" to {_player}
+	return ({_displayAmount} of {_returnItem})
+
+function game_crateHandler_playerOpenCrate_menuSetup(player: offline player, crateName: text, withCrateRewardPointer: boolean = false):
+	open chest with 5 row named "&c%{_crateName}%" to {_player}
+	loop 2 times:
+		loop 9 times:
+			format a gui slot ((((loop-number-1) - 1) * 36) + ((loop-number-2) - 1)) of {_player} with black glass named "&f" to do nothing
+	loop 2 times:
+		loop 3 times:
+			format a gui slot ((((loop-number-1) - 1) * 8) + (((loop-number-2) - 1) * 9) + 9) of {_player} with black glass named "&f" to do nothing
+	if {_withCrateRewardPointer} is true:
+		format a gui slot 13 of {_player} with red glass named "&f" to do nothing
+		format a gui slot 31 of {_player} with red glass named "&f" to do nothing
+
+function game_crateHandler_getCrateName(crateId: text) :: text:
+	replace all "_" with " " in {_crateId}
+	set {_crateId} to game_displayHandler_uppercaseLeadingLetter({_crateId})
+	return {_crateId}
+
+function game_crateHandler_getCrateKey(crateId: text) :: item:
+	set {_crateName} to game_crateHandler_getCrateName({_crateId})
+	return (glowing GHAST_TEAR named "&e%{_crateName}% Key" with lore "||&eType: &fCrate Key||&eCrate: &f%{_crateName}%")

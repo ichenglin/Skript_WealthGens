@@ -1,0 +1,58 @@
+function game_tokenEventHandler_findButtonEvent_newButton(buttonSpecificType: text = "RANDOM"):
+	if {-game_tokenEventHandler::BUTTON_ID} is set:
+		game_tokenEventHandler_findButtonEvent_removeButton()
+	while (true):
+		set {_x} to (random number between -10.5 and -46.5)
+		set {_y} to 52.5
+		set {_z} to (random number between -10.5 and -46.5)
+		set {_randomLocation} to (location at ({_x}, {_y}, {_z}) in world("plots"))
+		set {_randomLocation} to (block at {_randomLocation}'s location)
+		if block at {_randomLocation} is air:
+			exit 1 loop
+	set {_buttonId} to game_groupsHandler_system_getRandomConfirmationCode(16)
+	set {-game_tokenEventHandler::BUTTON_ID} to {_buttonId}
+	set {-game_tokenEventHandler::BUTTON_LOCATION} to {_randomLocation}
+	if {_buttonSpecificType} is "RANDOM":
+		set {_enhancedChance} to (random number between 0 and 10)
+		if {_enhancedChance} <= 1:
+			set {-game_tokenEventHandler::BUTTON_TYPE} to "ENHANCED"
+		else:
+			set {-game_tokenEventHandler::BUTTON_TYPE} to "NORMAL"
+	else:
+		set {-game_tokenEventHandler::BUTTON_TYPE} to {_buttonSpecificType}
+	if {-game_tokenEventHandler::BUTTON_TYPE} is "ENHANCED":
+		send "%nl%&d[Event] An &fenhanced button &dhas spawned on ground at spawn, find it for rewards!%nl%&d[Event] Guaranteed Rewards: &fBalance&d, &fTokens&d, &fCrate Keys&d.%nl%" to all players
+	else if {-game_tokenEventHandler::BUTTON_TYPE} is "BABY":
+		send "%nl%&d[Event] The &fenhanced button &dhas summoned &fbaby button &don ground at spawn, find it for rewards!%nl%&d[Event] Guaranteed Rewards: &fBalance&d, &fTokens&d.%nl%" to all players
+	else:
+		send "%nl%&d[Event] A button has spawned on ground at spawn, find it for rewards!%nl%&d[Event] Guaranteed Rewards: &fBalance&d, &fTokens&d.%nl%" to all players
+	set block at {_randomLocation} to stone_button:5
+	wait 1 minute
+	if {-game_tokenEventHandler::BUTTON_ID} is {_buttonId}:
+		game_tokenEventHandler_findButtonEvent_removeButton()
+		send "%nl%&d[Event] The button has left...%nl%" to all players
+
+function game_tokenEventHandler_findButtonEvent_confirmPlayerFindButton(player: offline player, location: location):
+	set {_location} to (block at {_location}'s location)
+	if {_location} is {-game_tokenEventHandler::BUTTON_LOCATION}:
+		send "%nl%&d[Event] &f%game_playersHandler_getPlayerDisplayName({_player})% &dhas found the button!%nl%" to all players
+		set {_foundButtonType} to {-game_tokenEventHandler::BUTTON_TYPE}
+		if {_foundButtonType} is "ENHANCED":
+			set {_playerBalanceReward} to (game_generatorsHandler_getPlayerTotalGeneratorLootWorth(({_player}'s UUID)) * 25)
+			game_playersHandler_setPlayerBalance({_player}, (game_playersHandler_getPlayerBalance({_player}) + {_playerBalanceReward}), true)
+			game_playersHandler_setPlayerTokens({_player}, (game_playersHandler_getPlayerTokens({_player}) + 3), true)
+			game_crateHandler_playerOpenCrate({_player}, "BUTTON_CRATE")
+		else:
+			set {_playerBalanceReward} to (game_generatorsHandler_getPlayerTotalGeneratorLootWorth(({_player}'s UUID)) * 10)
+			game_playersHandler_setPlayerBalance({_player}, (game_playersHandler_getPlayerBalance({_player}) + {_playerBalanceReward}), true)
+			game_playersHandler_setPlayerTokens({_player}, (game_playersHandler_getPlayerTokens({_player}) + 1), true)
+		game_tokenEventHandler_findButtonEvent_removeButton()
+		if {_foundButtonType} is "ENHANCED":
+			set {_babyChance} to (random number between 0 and 5)
+			if {_babyChance} <= 1:
+				wait 3 ticks
+				game_tokenEventHandler_findButtonEvent_newButton("BABY")
+
+function game_tokenEventHandler_findButtonEvent_removeButton():
+	set block at {-game_tokenEventHandler::BUTTON_LOCATION} to air
+	delete {-game_tokenEventHandler::*}

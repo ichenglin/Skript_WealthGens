@@ -1,0 +1,289 @@
+function game_playerControlPanelHandler_panelGUI(controlPanelViewer: offline player, controlPanelTarget: offline player, category: text, page: number = 1):
+	set {_controlPanelTargetUUID} to ({_controlPanelTarget}'s UUID)
+	set {_controlPanelViewerUUID} to ({_controlPanelViewer}'s UUID)
+	set {_guiId} to game_groupsHandler_system_getRandomConfirmationCode(16)
+	game_playerControlPanelHandler_guiBasic({_controlPanelViewer}, {_controlPanelTarget})
+	set {-game_playerControlPanelHandler::%{_controlPanelViewerUUID}%_GUI_LOADING_ID} to {_guiId}
+	if {_category} is "GENERATOR_LIST" or "MACHINE_LIST" or "PLOT_LIST":
+		if {_category} is "GENERATOR_LIST":
+			set {_playerOwnedItemsAmount} to (stringDatasAPI_getData({game_generatorsHandler_playerData::%{_controlPanelTargetUUID}%}, "OWNED_GENERATORS_AMOUNT") parsed as number)
+			set {_playerOwnedItemsListText} to stringDatasAPI_getData({game_generatorsHandler_playerData::%{_controlPanelTargetUUID}%}, "OWNED_GENERATORS_LIST")
+			set {_switchNextListItem} to (BOOK named "&eSwitch List" with lore "&f||&a1. Generators List||&72. Machines List||&73. Plots List||&f||&eClick to Switch||&f")
+			format a gui slot 49 of {_controlPanelViewer} with {_switchNextListItem} to close then run function game_playerControlPanelHandler_panelGUI({_controlPanelViewer}, {_controlPanelTarget}, "MACHINE_LIST")
+		else if {_category} is "MACHINE_LIST":
+			set {_playerOwnedItemsAmount} to (stringDatasAPI_getData({game_machinesHandler_playerData::%{_controlPanelTargetUUID}%}, "OWNED_MACHINES_AMOUNT") parsed as number)
+			set {_playerOwnedItemsListText} to stringDatasAPI_getData({game_machinesHandler_playerData::%{_controlPanelTargetUUID}%}, "OWNED_MACHINES_LIST")
+			set {_switchNextListItem} to (BOOK named "&eSwitch List" with lore "&f||&71. Generators List||&a2. Machines List||&73. Plots List||&f||&eClick to Switch||&f")
+			format a gui slot 49 of {_controlPanelViewer} with {_switchNextListItem} to close then run function game_playerControlPanelHandler_panelGUI({_controlPanelViewer}, {_controlPanelTarget}, "PLOT_LIST")
+		else if {_category} is "PLOT_LIST":
+			set {_playerOwnedItemsAmount} to (stringDatasAPI_getData({game_plotsHandler_playerData::%{_controlPanelTargetUUID}%}, "OWNED_PLOTS_AMOUNT") parsed as number)
+			set {_playerOwnedItemsListText} to stringDatasAPI_getData({game_plotsHandler_playerData::%{_controlPanelTargetUUID}%}, "OWNED_PLOTS_LIST")
+			set {_switchNextListItem} to (BOOK named "&eSwitch List" with lore "&f||&71. Generators List||&72. Machines List||&a3. Plots List||&f||&eClick to Switch||&f")
+			format a gui slot 49 of {_controlPanelViewer} with {_switchNextListItem} to close then run function game_playerControlPanelHandler_panelGUI({_controlPanelViewer}, {_controlPanelTarget}, "GENERATOR_LIST")
+		if {_playerOwnedItemsAmount} is set:
+			set {_itemsInCategory} to {_playerOwnedItemsAmount}
+			set {_categoryPages} to ceil({_itemsInCategory} / 28)
+			set {_playerOwnedItems::*} to {_playerOwnedItemsListText} split by ","
+			loop 28 times:
+				if {-game_playerControlPanelHandler::%{_controlPanelViewerUUID}%_GUI_LOADING_ID} is not {_guiId}:
+					stop
+				set {_loopShopItemIndex} to (({_page} - 1) * 28 + loop-number)
+				set {_loopSlot} to (loop-number + (floor((loop-number - 1) / 7) * 2) + 9)
+				set {_loopSlotItemLocationText} to {_playerOwnedItems::%{_loopShopItemIndex}%}
+				if {_loopSlotItemLocationText} is not set:
+					exit 1 loop
+				if {_category} is "GENERATOR_LIST":
+					set {_loopSlotItemDisplay} to game_playerControlPanelHandler_generatorDisplay({_loopSlotItemLocationText})
+					set {_loopSlotItemDisplay} to {_loopSlotItemDisplay} with lore "%{_loopSlotItemDisplay}'s lore%||&eClick to Edit Generator||&f"
+					format a gui slot {_loopSlot} of {_controlPanelViewer} with {_loopSlotItemDisplay} to close then run function game_playerControlPanelHandler_panelGUI_editGenerator({_controlPanelViewer}, {_controlPanelTarget}, {_loopSlotItemLocationText})
+				else if {_category} is "MACHINE_LIST":
+					set {_loopSlotItemDisplay} to game_playerControlPanelHandler_machineDisplay({_loopSlotItemLocationText})
+					set {_loopSlotItemDisplay} to {_loopSlotItemDisplay} with lore "%{_loopSlotItemDisplay}'s lore%||&eClick to Edit Machine||&f"
+					format a gui slot {_loopSlot} of {_controlPanelViewer} with {_loopSlotItemDisplay} to close then run function game_playerControlPanelHandler_panelGUI_editMachine({_controlPanelViewer}, {_controlPanelTarget}, {_loopSlotItemLocationText})
+				else if {_category} is "PLOT_LIST":
+					set {_loopSlotItemDisplay} to game_playerControlPanelHandler_plotDisplay({_loopSlotItemLocationText})
+					set {_loopSlotItemDisplay} to {_loopSlotItemDisplay} with lore "%{_loopSlotItemDisplay}'s lore%||&eClick to Edit Plot||&f"
+					format a gui slot {_loopSlot} of {_controlPanelViewer} with {_loopSlotItemDisplay} to close then run function game_playerControlPanelHandler_panelGUI_editPlot({_controlPanelViewer}, {_controlPanelTarget}, {_loopSlotItemLocationText})
+				delete {_loopSlotItemLocationText}
+				wait 4 ticks
+		else:
+			set {_itemsInCategory} to 1
+			if {_category} is "GENERATOR_LIST":
+				format a gui slot 10 of {_controlPanelViewer} with red glass named "&cYou don't have any placed generators! :(" with lore "||&ePlace a generator to start||&eearning money, you can||&epurchase more generators||&ein /shop." to do nothing
+			else if {_category} is "MACHINE_LIST":
+				format a gui slot 10 of {_controlPanelViewer} with red glass named "&cYou don't have any placed machines! :(" with lore "||&ePlace a machine to upgrade||&eyour plot for bonus perks." to do nothing
+			else if {_category} is "PLOT_LIST":
+				format a gui slot 10 of {_controlPanelViewer} with red glass named "&cYou don't have any claimed plots! :(" with lore "||&eClaim a plot to build||&eyour farm." to do nothing
+	if {_page} > 1:
+		format a gui slot 47 of {_controlPanelViewer} with ARROW named "&cPrevious Page (%{_page}%/%{_categoryPages}%)" to run function game_playerControlPanelHandler_panelGUI({_controlPanelViewer}, {_controlPanelTarget}, {_category}, ({_page} - 1))
+	else:
+		format a gui slot 47 of {_controlPanelViewer} with black glass named "&f" to do nothing
+#	format a gui slot 49 of {_controlPanelViewer} with BARRIER named "&cBack to Main Menu" to close then run function game_playerControlPanelHandler_panelGUI({_controlPanelViewer}, {_controlPanelTarget}, "MAIN")
+	if {_page} < {_categoryPages}:
+		format a gui slot 51 of {_controlPanelViewer} with ARROW named "&cNext Page (%{_page}%/%{_categoryPages}%)" to run function game_playerControlPanelHandler_panelGUI({_controlPanelViewer}, {_controlPanelTarget}, {_category}, ({_page} + 1))
+	else:
+		format a gui slot 51 of {_controlPanelViewer} with black glass named "&f" to do nothing
+	set {-game_playerControlPanelHandler::%{_controlPanelViewerUUID}%_GUI_LOADED_ID} to {_guiId}
+
+function game_playerControlPanelHandler_panelGUI_editGenerator(controlPanelViewer: offline player, controlPanelTarget: offline player, generatorLocationText: text):
+	set {_controlPanelViewerUUID} to ({_controlPanelViewer}'s UUID)
+	set {-game_playerControlPanelHandler::%{_controlPanelViewerUUID}%_GUI_LOADING_ID} to game_groupsHandler_system_getRandomConfirmationCode(16)
+	set {_generatorData::*} to game_generatorsHandler_getGeneratorData({_generatorLocationText}, "GENERATOR_LEVEL")
+	set {_oldGeneratorLevel} to ({_generatorData::1} parsed as number)
+	set {_newGeneratorLevel} to ({_oldGeneratorLevel} + 1)
+	set {_generatorDisplayItem} to game_playerControlPanelHandler_generatorDisplay({_generatorLocationText})
+	game_playerControlPanelHandler_guiBasic({_controlPanelViewer}, {_controlPanelTarget})
+	format a gui slot 49 of {_controlPanelViewer} with BARRIER named "&cBack to Generator List" to close then run function game_playerControlPanelHandler_panelGUI({_controlPanelViewer}, {_controlPanelTarget}, "GENERATOR_LIST")
+	format a gui slot 22 of {_controlPanelViewer} with {_generatorDisplayItem} to do nothing
+	format a gui slot 29 of {_controlPanelViewer} with DYE:1 named "&cPickup Generator" with lore "||&7Feature on cooldown,||&7please wait a while||&7before using this||&7again!" to do nothing
+	format a gui slot 33 of {_controlPanelViewer} with GOLDEN_INGOT named "&eUpgrade Generator" with lore "||&7Feature on cooldown,||&7please wait a while||&7before using this||&7again!" to do nothing
+	while game_cooldownHandler_checkCooldownReady("%{_controlPanelViewer}'s UUID%_FEATURE_INTERACTION", (10 ticks)) is false:
+		wait 5 ticks
+	set {_upgradeCost} to {-game_dataHandler::GENERATOR_UPGRADE_COST_%{_newGeneratorLevel}%}
+	format a gui slot 29 of {_controlPanelViewer} with DYE:1 named "&cPickup Generator" with lore "||&eRemove the placed||&egenerator and return||&eit to your inventory.||&f" to run function game_playerControlPanelHandler_panelGUI_editGenerator_runAction({_controlPanelViewer}, {_controlPanelTarget}, {_generatorLocationText}, "REMOVE_GENERATOR")
+	if {_upgradeCost} is not set:
+		format a gui slot 33 of {_controlPanelViewer} with GOLDEN_INGOT named "&eUpgrade Generator" with lore "||&cYou have already reached||&cthe maximum generator level.||&f" to do nothing
+		stop
+	set {_playerBalance} to game_playersHandler_getPlayerBalance({_controlPanelViewer})
+	if {_upgradeCost} <= {_playerBalance}:
+		format a gui slot 33 of {_controlPanelViewer} with GOLDEN_INGOT named "&eUpgrade Generator" with lore "||&eUpgrade Cost: &f$%game_displayHandler_getNumberDigitDisplay({_upgradeCost})%||&eLevel: &f%{_oldGeneratorLevel}% ➭ %{_newGeneratorLevel}%||&f" to run function game_playerControlPanelHandler_panelGUI_editGenerator_runAction({_controlPanelViewer}, {_controlPanelTarget}, {_generatorLocationText}, "UPGRADE_GENERATOR")
+	else:
+		format a gui slot 33 of {_controlPanelViewer} with GOLDEN_INGOT named "&eUpgrade Generator" with lore "||&eUpgrade Cost: &f$%game_displayHandler_getNumberDigitDisplay({_upgradeCost})%||&eLevel: &f%{_oldGeneratorLevel}% ➭ %{_newGeneratorLevel}%||&f||&cYou don't have enough||&cmoney to upgrade this||&cgenerator!" to do nothing
+
+function game_playerControlPanelHandler_panelGUI_editMachine(controlPanelViewer: offline player, controlPanelTarget: offline player, machineLocationText: text):
+	set {_controlPanelViewerUUID} to ({_controlPanelViewer}'s UUID)
+	set {-game_playerControlPanelHandler::%{_controlPanelViewerUUID}%_GUI_LOADING_ID} to game_groupsHandler_system_getRandomConfirmationCode(16)
+	set {_machineDisplayItem} to game_playerControlPanelHandler_machineDisplay({_machineLocationText})
+	game_playerControlPanelHandler_guiBasic({_controlPanelViewer}, {_controlPanelTarget})
+	format a gui slot 49 of {_controlPanelViewer} with BARRIER named "&cBack to Machine List" to close then run function game_playerControlPanelHandler_panelGUI({_controlPanelViewer}, {_controlPanelTarget}, "MACHINE_LIST")
+	format a gui slot 22 of {_controlPanelViewer} with {_machineDisplayItem} to do nothing
+	format a gui slot 29 of {_controlPanelViewer} with DYE:1 named "&cPickup Machine" with lore "||&7Feature on cooldown,||&7please wait a while||&7before using this||&7again!" to do nothing
+	format a gui slot 33 of {_controlPanelViewer} with GOLDEN_INGOT named "&eUpgrade Machine" with lore "||&cYou are not allowed||&cto upgrade machines.||&f" to do nothing
+	while game_cooldownHandler_checkCooldownReady("%{_controlPanelViewer}'s UUID%_FEATURE_INTERACTION", (10 ticks)) is false:
+		wait 5 ticks
+	format a gui slot 29 of {_controlPanelViewer} with DYE:1 named "&cPickup Machine" with lore "||&eRemove the placed||&emachine and return||&eit to your inventory.||&f" to run function game_playerControlPanelHandler_panelGUI_editMachine_runAction({_controlPanelViewer}, {_controlPanelTarget}, {_machineLocationText}, "REMOVE_MACHINE")
+
+function game_playerControlPanelHandler_panelGUI_editPlot(controlPanelViewer: offline player, controlPanelTarget: offline player, plot: text):
+	set {_controlPanelViewerUUID} to ({_controlPanelViewer}'s UUID)
+	set {-game_playerControlPanelHandler::%{_controlPanelViewerUUID}%_GUI_LOADING_ID} to game_groupsHandler_system_getRandomConfirmationCode(16)
+	set {_plotDisplayItem} to game_playerControlPanelHandler_plotDisplay({_plot})
+	game_playerControlPanelHandler_guiBasic({_controlPanelViewer}, {_controlPanelTarget})
+	format a gui slot 49 of {_controlPanelViewer} with BARRIER named "&cBack to Plot List" to close then run function game_playerControlPanelHandler_panelGUI({_controlPanelViewer}, {_controlPanelTarget}, "PLOT_LIST")
+	format a gui slot 22 of {_controlPanelViewer} with {_plotDisplayItem} to do nothing
+#	format a gui slot 29 of {_controlPanelViewer} with DYE:1 named "&cPickup Machine" with lore "||&7Feature on cooldown,||&7please wait a while||&7before using this||&7again!" to do nothing
+#	format a gui slot 33 of {_controlPanelViewer} with GOLDEN_INGOT named "&eUpgrade Machine" with lore "||&cYou are not allowed||&cto upgrade machines.||&f" to do nothing
+#	while game_cooldownHandler_checkCooldownReady("%{_controlPanelViewer}'s UUID%_FEATURE_INTERACTION", (10 ticks)) is false:
+#		wait 5 ticks
+#	format a gui slot 29 of {_controlPanelViewer} with DYE:1 named "&cPickup Machine" with lore "||&eRemove the placed||&emachine and return||&eit to your inventory.||&f" to run function game_playerControlPanelHandler_panelGUI_editMachine_runAction({_controlPanelViewer}, {_controlPanelTarget}, {_machineLocationText}, "REMOVE_MACHINE")
+
+function game_playerControlPanelHandler_panelGUI_editGenerator_runAction(controlPanelViewer: offline player, controlPanelTarget: offline player, generatorLocationText: text, action: text):
+	game_cooldownHandler_newCooldown("%{_controlPanelViewer}'s UUID%_FEATURE_INTERACTION")
+	if game_generatorsHandler_checkBlockIsGenerator(game_generatorsHandler_textToLocation({_generatorLocationText})) is false:
+		send "&cFailed to find the generator, please contact the server administrators if you believe that this is in error." to {_controlPanelViewer}
+		close {_controlPanelViewer}'s inventory
+		stop
+	if {_action} is "REMOVE_GENERATOR":
+		game_playerControlPanelHandler_panelGUI_editGenerator_playerRemoveGenerator({_controlPanelViewer}, {_controlPanelTarget}, {_generatorLocationText})
+		game_playerControlPanelHandler_panelGUI({_controlPanelViewer}, {_controlPanelTarget}, "GENERATOR_LIST")
+	else if {_action} is "UPGRADE_GENERATOR":
+		game_playerControlPanelHandler_panelGUI_editGenerator_playerUpgradeGenerator({_controlPanelViewer}, {_controlPanelTarget}, {_generatorLocationText}, true)
+		game_playerControlPanelHandler_panelGUI_editGenerator({_controlPanelViewer}, {_controlPanelTarget}, {_generatorLocationText})
+
+function game_playerControlPanelHandler_panelGUI_editGenerator_playerRemoveGenerator(controlPanelViewer: offline player, controlPanelTarget: offline player, generatorLocationText: text):
+	set {_generatorLocation} to game_generatorsHandler_textToLocation({_generatorLocationText})
+	set {_generatorData::*} to game_generatorsHandler_getGeneratorData({_generatorLocationText}, ("GENERATOR_OWNER" and "GENERATOR_LEVEL" and "GENERATOR_ENHANCED" and "GENERATOR_IN_PLOT"))
+	set {_generatorName} to {-game_dataHandler::GENERATOR_NAME_%{_generatorData::2}%}
+	set {_generatorItem} to game_generatorsHandler_getGeneratorItem(({_generatorData::2} parsed as number), (check [{_generatorData::3} is "TRUE"]))
+	if {_controlPanelViewer} doesn't have enough space for {_generatorItem}:
+		send "&cYour inventory is full!" to {_controlPanelViewer}
+		wait 5 ticks
+		close {_controlPanelViewer}'s inventory
+		stop
+	game_generatorsHandler_removePlayerGenerator({_generatorLocationText})
+#	send "RBI-PRE: %{_generatorLocation}% %{_generatorLocationText}%" to all players
+	set block at {_generatorLocation} to air
+	give {_generatorItem} to {_controlPanelViewer}
+	send "&eYou have removed a &f%{_generatorName}%&e! &e(&fLevel %{_generatorData::2}%&e)" to {_controlPanelViewer}
+	send title "&c&lRemoved Generator" with subtitle "&eYou have removed a &f&l%{_generatorName}%" to {_controlPanelViewer} for 2 seconds with 0 tick fadein and 0 tick fadeout
+	game_playersHandler_updatePlayerSidebar_playersInPlot({_generatorData::4})
+
+function game_playerControlPanelHandler_panelGUI_editGenerator_playerUpgradeGenerator(controlPanelViewer: offline player, controlPanelTarget: offline player, generatorLocationText: text, checkViewerBalance: boolean = true):
+	set {_oldGeneratorData::*} to game_generatorsHandler_getGeneratorData({_generatorLocationText}, ("GENERATOR_LEVEL" and "GENERATOR_ENHANCED"))
+	set {_oldGeneratorLevel} to ({_oldGeneratorData::1} parsed as number)
+	set {_newGeneratorLevel} to ({_oldGeneratorLevel} + 1)
+	set {_oldGeneratorName} to {-game_dataHandler::GENERATOR_NAME_%{_oldGeneratorLevel}%}
+	set {_newGeneratorName} to {-game_dataHandler::GENERATOR_NAME_%{_newGeneratorLevel}%}
+	if {_newGeneratorName} is not set:
+		send "&cYou have already reached the maximum generator level!" to {_controlPanelViewer}
+		stop
+	set {_upgradeCost} to {-game_dataHandler::GENERATOR_UPGRADE_COST_%{_newGeneratorLevel}%}
+	set {_playerBalance} to game_playersHandler_getPlayerBalance({_controlPanelViewer})
+	if {_upgradeCost} > {_playerBalance}:
+		send "&cYou don't have enough money to upgrade this generator! ($%{_playerBalance}% / $%{_upgradeCost}%)" to {_controlPanelViewer}
+		stop
+	game_playersHandler_setPlayerBalance({_controlPanelViewer}, ({_playerBalance} - {_upgradeCost}))
+	game_generatorsHandler_setGeneratorLevel({_generatorLocationText}, {_newGeneratorLevel})
+	send "&eYou have upgraded your &f%{_oldGeneratorName}% &eto &f%{_newGeneratorName}%&e!" to {_controlPanelViewer}
+	send title "&a&lUpgraded Generator" with subtitle "&e&l%{_oldGeneratorName}% &f➭ &e&l%{_newGeneratorName}%" to {_controlPanelViewer} for 2 seconds with 0 tick fadein and 0 tick fadeout
+	if {_oldGeneratorData::2} is "TRUE":
+		game_generatorsHandler_setGeneratorEnhanced({_generatorLocationText}, false)
+		send "%nl%&cThe upgraded generator have lost its enhancement!%nl%" to {_controlPanelViewer}
+	if (random number between 0 and 100) <= 1:
+		game_generatorsHandler_setGeneratorEnhanced({_generatorLocationText}, true)
+		send "%nl%&aThe upgraded generator have turned into an enhanced generator!%nl%" to {_controlPanelViewer}
+	if game_generatorsHandler_isActiveGenerator({_generatorLocationText}) is true:
+		game_generatorsHandler_removeActiveGenerator({_generatorLocationText})
+		game_generatorsHandler_addActiveGenerator({_generatorLocationText})
+		game_generatorsHandler_updateActiveGenerator_hologramText({_generatorLocationText})
+
+function game_playerControlPanelHandler_panelGUI_editGenerator_playerEnhanceGenerator(controlPanelViewer: offline player, generatorLocationText: text):
+	game_generatorsHandler_setGeneratorEnhanced({_generatorLocationText}, true)
+	send "%nl%&aThe generator have turned into an enhanced generator!%nl%" to {_controlPanelViewer}
+	if game_generatorsHandler_isActiveGenerator({_generatorLocationText}) is true:
+		game_generatorsHandler_removeActiveGenerator({_generatorLocationText})
+		game_generatorsHandler_addActiveGenerator({_generatorLocationText})
+		game_generatorsHandler_updateActiveGenerator_hologramText({_generatorLocationText})
+
+function game_playerControlPanelHandler_panelGUI_editMachine_runAction(controlPanelViewer: offline player, controlPanelTarget: offline player, machineLocationText: text, action: text):
+	game_cooldownHandler_newCooldown("%{_controlPanelViewer}'s UUID%_FEATURE_INTERACTION")
+	if game_machinesHandler_checkBlockIsMachine(game_generatorsHandler_textToLocation({_machineLocationText})) is false:
+		send "&cFailed to find the machine, please contact the server administrators if you believe that this is in error." to {_controlPanelViewer}
+		close {_controlPanelViewer}'s inventory
+		stop
+	if {_action} is "REMOVE_MACHINE":
+		game_playerControlPanelHandler_panelGUI_editMachine_playerRemoveMachine({_controlPanelViewer}, {_controlPanelTarget}, {_machineLocationText})
+		game_playerControlPanelHandler_panelGUI({_controlPanelViewer}, {_controlPanelTarget}, "MACHINE_LIST")
+
+function game_playerControlPanelHandler_panelGUI_editMachine_playerRemoveMachine(controlPanelViewer: offline player, controlPanelTarget: offline player, machineLocationText: text):
+	set {_machineLocation} to game_generatorsHandler_textToLocation({_machineLocationText})
+	set {_machineData::*} to game_machinesHandler_getMachineData({_machineLocationText}, ("MACHINE_OWNER" and "MACHINE_LEVEL" and "MACHINE_TYPE" and "MACHINE_IN_PLOT"))
+	set {_machineName} to game_machinesHandler_getMachineNameByMachineType({_machineData::3})
+	set {_machineItem} to game_machinesHandler_getMachineItem({_machineData::3}, ({_machineData::2} parsed as number))
+	if {_controlPanelViewer} doesn't have enough space for {_machineItem}:
+		send "&cYour inventory is full!" to {_controlPanelViewer}
+		wait 5 ticks
+		close {_controlPanelViewer}'s inventory
+		stop
+	game_machinesHandler_removePlayerMachine({_machineLocationText})
+	set block at {_machineLocation} to air
+	give {_machineItem} to {_controlPanelViewer}
+	send "&eYou have removed a &f%{_machineName}% Machine&e! &e(&fLevel %{_machineData::2}%&e)" to {_controlPanelViewer}
+	send title "&c&lRemoved Machine" with subtitle "&eYou have removed a &f&l%{_machineName}% Machine" to {_controlPanelViewer} for 2 seconds with 0 tick fadein and 0 tick fadeout
+	game_playersHandler_updatePlayerSidebar_playersInPlot({_machineData::4})
+
+function game_playerControlPanelHandler_guiBasic(controlPanelViewer: offline player, controlPanelTarget: offline player):
+	set {_controlPanelTargetDisplay} to (check [{_controlPanelViewer} is not {_controlPanelTarget}] ? " (%{_controlPanelTarget}%)" : "")
+	open chest with 6 row named "&cControl Panel%{_controlPanelTargetDisplay}%" to {_controlPanelViewer}
+	loop 2 times:
+		loop 9 times:
+			format a gui slot ((((loop-number-1) - 1) * 45) + ((loop-number-2) - 1)) of {_controlPanelViewer} with black glass named "&f" to do nothing
+	loop 2 times:
+		loop 4 times:
+			format a gui slot ((((loop-number-1) - 1) * 8) + (((loop-number-2) - 1) * 9) + 9) of {_controlPanelViewer} with black glass named "&f" to do nothing
+
+function game_playerControlPanelHandler_generatorDisplay(generatorLocationText: text) :: item:
+	set {_generatorData::*} to game_generatorsHandler_getGeneratorData({_generatorLocationText}, ("GENERATOR_LEVEL" and "GENERATOR_IN_PLOT" and "GENERATOR_PLACED_DATE" and "GENERATOR_ENHANCED"))
+	set {_generatorLevel} to ({_generatorData::1} parsed as number)
+	set {_generatorName} to {-game_dataHandler::GENERATOR_NAME_%{_generatorLevel}%}
+	set {_generatorEnhanced} to (check [{_generatorData::4} is "TRUE"] ? "&aTrue" : "&cFalse")
+	set {_generatorLootWorth} to {-game_dataHandler::GENERATOR_LOOT_WORTH_%{_generatorLevel}%}
+	set {_generatorLootWorthMultiplier} to game_generatorsHandler_getGeneratorLootWorthMultiplier({_generatorLocationText})
+	set {_generatorLocation} to game_generatorsHandler_textToLocation({_generatorLocationText})
+	set {_generatorPlacedDateUnix} to ({_generatorData::3} parsed as number)
+	set {_secondsPassedSincePlacedDate} to (unixAPI_dateToUnix(now) - {_generatorPlacedDateUnix})
+	set {_timePassedSincePlacedDateDisplay} to game_displayHandler_secondsToTime({_secondsPassedSincePlacedDate})
+	set {_generatorDisplayItem} to BOOK
+	set {_generatorDisplayItem} to game_playerControlPanelHandler_generatorDisplay_getLootFromGeneratorLevel({_generatorLevel})
+	set {_generatorDisplayItem} to {_generatorDisplayItem} named "&e%{_generatorName}%" with lore "||&eLevel: &f%{_generatorLevel}%||&eEnhanced: &f%{_generatorEnhanced}%||&f||&eLoot Worth: &f$%game_displayHandler_getNumberDigitDisplay(ceil({_generatorLootWorth} * {_generatorLootWorthMultiplier}))%||&7(%{_generatorLootWorthMultiplier}%x Multiplier)||&f||&eIn Plot: &f%{_generatorData::2}%||&eLocation: &f%floor({_generatorLocation}'s x coords)% %floor({_generatorLocation}'s y coords)% %floor({_generatorLocation}'s z coords)%||&ePlaced: &f%{_timePassedSincePlacedDateDisplay}% Ago||&f"
+	return ({_generatorLevel} of {_generatorDisplayItem})
+
+function game_playerControlPanelHandler_generatorDisplay_getLootFromGeneratorLevel(generatorLevel: number) :: item:
+	#
+	# This function is created to return a new item instead of returning the item object
+	# so nbt editing doesn't affect the original object stored in variable.
+	#
+	return {-game_dataHandler::GENERATOR_LOOT_%{_generatorLevel}%}
+
+function game_playerControlPanelHandler_machineDisplay(machineLocationText: text) :: item:
+	set {_machineData::*} to game_machinesHandler_getMachineData({_machineLocationText}, ("MACHINE_LEVEL" and "MACHINE_TYPE" and "MACHINE_IN_PLOT" and "MACHINE_PLACED_DATE"))
+	set {_machineLevel} to ({_machineData::1} parsed as number)
+	set {_machineName} to game_machinesHandler_getMachineNameByMachineType({_machineData::2})
+	set {_machineLocation} to game_generatorsHandler_textToLocation({_machineLocationText})
+	set {_machinePlacedDateUnix} to ({_machineData::4} parsed as number)
+	set {_secondsPassedSincePlacedDate} to (unixAPI_dateToUnix(now) - {_machinePlacedDateUnix})
+	set {_timePassedSincePlacedDateDisplay} to game_displayHandler_secondsToTime({_secondsPassedSincePlacedDate})
+	set {_machineStatsText} to game_playerControlPanelHandler_machineDisplay_machineStatsDisplay({_machineData::2}, {_machineLevel})
+	set {_machineDisplayItem} to BOOK
+	set {_machineDisplayItem} to game_playerControlPanelHandler_machineDisplay_getMachineBlockItem({_machineData::2}, {_machineLevel})
+	set {_machineDisplayItem} to {_machineDisplayItem} named "&e%{_machineName}% Machine" with lore "||&eMachine Type: &f%{_machineName}%||&eLevel: &f%{_machineLevel}%||&f||&eMachine Stats:||%{_machineStatsText}%||&f||&eIn Plot: &f%{_machineData::3}%||&eLocation: &f%floor({_machineLocation}'s x coords)% %floor({_machineLocation}'s y coords)% %floor({_machineLocation}'s z coords)%||&ePlaced: &f%{_timePassedSincePlacedDateDisplay}% Ago||&f"
+	return ({_machineLevel} of {_machineDisplayItem})
+
+function game_playerControlPanelHandler_machineDisplay_machineStatsDisplay(machineType: text, machineLevel: number) :: text:
+	loop {-game_dataHandler::MACHINE_%{_machineType}%_%{_machineLevel}%_STATS::*}:
+		set {_loopMachineStatType} to loop-index
+		replace all "_" with " " in {_loopMachineStatType}
+		set {_loopMachineStatType} to game_displayHandler_uppercaseLeadingLetter({_loopMachineStatType})
+		set {_loopMachineStatValue} to loop-value
+		set {_loopMachineStatDisplay} to "&7► %{_loopMachineStatType}%: +%{_loopMachineStatValue}%"
+		set {_machineStatsText} to (check [{_machineStatsText} is set] ? "%{_machineStatsText}%||%{_loopMachineStatDisplay}%" : {_loopMachineStatDisplay})
+	return (check [{_machineStatsText} is set] ? {_machineStatsText} : "&7This machine have||&7no stats :(")
+
+function game_playerControlPanelHandler_machineDisplay_getMachineBlockItem(machineType: text, machineLevel: number) :: item:
+	#
+	# This function is created to return a new item instead of returning the item object
+	# so nbt editing doesn't affect the original object stored in variable.
+	#
+	return {-game_dataHandler::MACHINE_BLOCK_%{_machineType}%_%{_machineLevel}%}
+
+function game_playerControlPanelHandler_plotDisplay(plot: text) :: item:
+	set {_plotOwnerUUID} to stringDatasAPI_getData({game_plotsHandler_plotData::%{_plot}%}, "PLOT_OWNER")
+	set {_plotOwner} to ({_plotOwnerUUID} parsed as offline player)
+	set {_plotClaimedDate} to (stringDatasAPI_getData({game_plotsHandler_plotData::%{_plot}%}, "PLOT_CLAIMED_DATE") parsed as number)
+	set {_secondsPassedSinceClaimeDate} to ((unixAPI_dateToUnix(now)) - {_plotClaimedDate})
+	set {_timePassedSinceClaimedDateDisplay} to game_displayHandler_secondsToTime({_secondsPassedSinceClaimeDate})
+	set {_plotMaximumGenerators} to game_generatorsHandler_generators_plotData_getPlotMaximumGeneratorsAmount({_plot})
+	set {_plotGenerators} to game_generatorsHandler_generators_plotData_getPlotGeneratorsAmount({_plot})
+	set {_plotMaximumMachines} to game_machinesHandler_machines_plotData_getPlotMaximumMachinesAmount({_plot})
+	set {_plotMachines} to game_machinesHandler_machines_plotData_getPlotMachinesAmount({_plot})
+	set {_machineDisplayItem} to GRASS named "&ePlot %{_plot}%" with lore "||&ePlot Owner: &f%{_plotOwner}%||&eClaimed: &f%{_timePassedSinceClaimedDateDisplay}% Ago||&f||&eGenerators: &f%{_plotGenerators}%/%{_plotMaximumGenerators}%||&eMachines: &f%{_plotMachines}%/%{_plotMaximumMachines}%||&f"
+	return (1 of {_machineDisplayItem})

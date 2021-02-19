@@ -1,0 +1,222 @@
+function game_groupsHandler_playerCreateGroup(groupOwner: offline player, groupName: text):
+	set {_groupId} to game_groupsHandler_system_getRandomUnusedGroupId()
+	set {_groupOwnerUUID} to ({_groupOwner}'s UUID)
+	game_groupsHandler_groupData_addData({_groupId}, {_groupOwnerUUID}, {_groupName})
+	game_groupsHandler_groupMemberData_addData({_groupId}, {_groupOwnerUUID})
+	game_groupsHandler_playerData_addData({_groupOwnerUUID}, {_groupId})
+	if {_groupOwner} is online:
+		game_playersHandler_updatePlayerTablist({_groupOwner})
+
+function game_groupsHandler_playerJoinGroup(player: offline player, groupId: text):
+	set {_playerUUID} to ({_player}'s UUID)
+	game_groupsHandler_groupMemberData_addData({_groupId}, {_playerUUID})
+	game_groupsHandler_groupInvitationData_removeData({_groupId}, {_playerUUID})
+	game_groupsHandler_playerData_addData({_playerUUID}, {_groupId})
+	game_groupsHandler_sendMessageToGroup({_groupId}, "&f%game_playersHandler_getPlayerDisplayName({_player})% &ehas joined the group!")
+	if {_player} is online:
+		game_playersHandler_updatePlayerTablist({_player})
+
+function game_groupsHandler_playerLeaveGroup(player: offline player, leaveReason: text = "NONE"):
+	set {_playerUUID} to ({_player}'s UUID)
+	set {_playerGroupId} to game_groupsHandler_getPlayerGroupId({_playerUUID})
+	set {_playerGroupData::*} to game_groupsHandler_getGroupData({_playerGroupId}, "GROUP_OWNER")
+	if {_playerGroupData::1} is {_playerUUID}:
+		game_groupsHandler_playerDisbandGroup({_playerGroupId}, "OWNER_HAS_LEFT")
+	else:
+		game_groupsHandler_groupMemberData_removeData({_playerGroupId}, {_playerUUID})
+		game_groupsHandler_playerData_removeData({_playerUUID})
+		if {_leaveReason} is not "KICKED":
+			game_groupsHandler_sendMessageToGroup({_playerGroupId}, "&f%game_playersHandler_getPlayerDisplayName({_player})% &ehas left the group!")
+	if {_player} is online:
+		game_playersHandler_updatePlayerTablist({_player})
+
+function game_groupsHandler_playerDisbandGroup(groupId: text, disbandReason: text = "NONE"):
+	set {_groupData::*} to game_groupsHandler_getGroupData({_groupId}, "GROUP_OWNER")
+	set {_groupOwner} to ({_groupData::1} parsed as offline player)
+	if {_disbandReason} is "OWNER_HAS_LEFT":
+		game_groupsHandler_sendMessageToGroup({_groupId}, "&eYour group has been disbanded due to the group owner (&f%game_playersHandler_getPlayerDisplayName({_groupOwner})%&e) has left!")
+	else:
+		game_groupsHandler_sendMessageToGroup({_groupId}, "&f%game_playersHandler_getPlayerDisplayName({_groupOwner})%&e has disbanded the group!")
+	set {_groupMembers::*} to game_groupsHandler_getGroupMembers({_groupId})
+	game_groupsHandler_groupData_removeData({_groupId})
+	loop {_groupMembers::*}:
+		set {_loopGroupMember} to (loop-value parsed as offline player)
+		game_groupsHandler_playerData_removeData(loop-value)
+		game_playersHandler_updatePlayerTablist({_loopGroupMember})
+
+function game_groupsHandler_playerRenameGroup(groupId: text, newGroupName: text):
+	set {_oldGroupName} to stringDatasAPI_getData({game_groupsHandler::GROUP_DATA_%{_groupId}%}, "GROUP_NAME")
+	set {game_groupsHandler::GROUP_DATA_%{_groupId}%} to stringDatasAPI_setData("GROUP_NAME", {_newGroupName}, {game_groupsHandler::GROUP_DATA_%{_groupId}%})
+	delete {game_groupsHandler::GROUP_NAME_TO_ID_%{_oldGroupName}%}
+	set {game_groupsHandler::GROUP_NAME_TO_ID_%{_newGroupName}%} to {_groupId}
+	set {game_groupsHandler::GROUP_ID_TO_NAME_%{_groupId}%} to {_newGroupName}
+	game_groupsHandler_sendMessageToGroup({_groupId}, "&eThe group has been renamed to &f%{_newGroupName}%&e!")
+	set {_groupMembers::*} to game_groupsHandler_getGroupMembers({_groupId})
+	loop {_groupMembers::*}:
+		set {_loopGroupMember} to (loop-value parsed as offline player)
+		game_playersHandler_updatePlayerTablist({_loopGroupMember})
+
+function game_groupsHandler_playerAssignGroupOwner(groupId: text, newGroupOwner: offline player):
+	set {_newGroupOwnerUUID} to ({_newGroupOwner}'s UUID)
+	set {game_groupsHandler::GROUP_DATA_%{_groupId}%} to stringDatasAPI_setData("GROUP_OWNER", {_newGroupOwnerUUID}, {game_groupsHandler::GROUP_DATA_%{_groupId}%})
+	game_groupsHandler_sendMessageToGroup({_groupId}, "&f%game_playersHandler_getPlayerDisplayName({_newGroupOwner})%&e has been assigned as the new group owner!")
+
+function game_groupsHandler_playerInvitePlayer(inviter: offline player, invitedPlayer: offline player, groupId: text):
+	set {_invitedPlayerUUID} to ({_invitedPlayer}'s UUID)
+	set {_invitationConfirmationCode} to game_groupsHandler_groupInvitationData_addData({_groupId}, {_invitedPlayerUUID})
+	set {_groupName} to game_groupsHandler_getGroupNameWithId({_groupId})
+	set {_inviterDisplayName} to game_playersHandler_getPlayerDisplayName({_inviter})
+	send "%nl%&eYou have been invited by %{_inviterDisplayName}%&e to join group &f%{_groupName}%&e!%nl%&eClick <command:/group join %{_groupName}%>&6&l[HERE]<reset> &eor execute command &f/group join %{_groupName}% &eto join.%nl%" to {_invitedPlayer}
+	game_groupsHandler_sendMessageToGroup({_groupId}, "&f%{_inviterDisplayName}%&e has invited &f%game_playersHandler_getPlayerDisplayName({_invitedPlayer})%&e to join the group!%nl%&eThey have 5 minutes to accept the invitation before it expired.")
+	wait 5 minutes
+	if {-game_groupsHandler::GROUP_INVITATION_%{_groupId}%_%{_invitedPlayerUUID}%} is {_invitationConfirmationCode}:
+		game_groupsHandler_groupInvitationData_removeData({_groupId}, {_invitedPlayerUUID})
+		send "&eGroup invitation from group &f%{_groupName}% &ehas expired!" to {_invitedPlayer}
+		game_groupsHandler_sendMessageToGroup({_groupId}, "&eGroup invitation sended to %game_playersHandler_getPlayerDisplayName({_invitedPlayer})%&e has expired!")
+
+function game_groupsHandler_playerKickPlayer(player: offline player, kickedPlayer: offline player, groupId: text):
+	game_groupsHandler_sendMessageToGroup({_groupId}, "%game_playersHandler_getPlayerDisplayName({_player})%&e has kicked &f%game_playersHandler_getPlayerDisplayName({_kickedPlayer})%&e out of the group!")
+	game_groupsHandler_playerLeaveGroup({_kickedPlayer}, "KICKED")
+
+function game_groupsHandler_playerModifyGroupNameColor(groupId: text, colorCode: text):
+	set {game_groupsHandler::GROUP_DATA_%{_groupId}%} to stringDatasAPI_setData("NAME_DISPLAY_COLOR", {_colorCode}, {game_groupsHandler::GROUP_DATA_%{_groupId}%})
+	set {_groupMembers::*} to game_groupsHandler_getGroupMembers({_groupId})
+	loop {_groupMembers::*}:
+		set {_loopGroupMember} to (loop-value parsed as offline player)
+		game_playersHandler_updatePlayerTablist({_loopGroupMember})
+	game_groupsHandler_sendMessageToGroup({_groupId}, (colored "&eGroup name display color has been set to &%{_colorCode}%▉&e!"))
+
+function game_groupsHandler_sendMessageToGroup(groupId: text, message: text):
+	set {_groupMembers::*} to game_groupsHandler_getGroupMembers({_groupId})
+	loop {_groupMembers::*}:	
+		set {_loopGroupMember} to (loop-value parsed as offline player)
+		if {_loopGroupMember} is online:
+			send {_message} to {_loopGroupMember}
+
+function game_groupsHandler_addExperienceToGroup(groupId: text, experience: number):
+	set {_groupExperience} to game_groupsHandler_getGroupExperience({_groupId})
+	add {_experience} to {_groupExperience}
+	set {game_groupsHandler::GROUP_DATA_%{_groupId}%} to stringDatasAPI_setData("GROUP_EXPERIENCE", "%{_groupExperience}%", {game_groupsHandler::GROUP_DATA_%{_groupId}%})
+
+function game_groupsHandler_groupData_addData(groupId: text, groupOwnerUUID: text, groupName: text):
+	set {_groupDataRaw} to stringDatasAPI_setData("GROUP_OWNER", {_groupOwnerUUID})
+	set {_groupDataRaw} to stringDatasAPI_setData("GROUP_NAME", {_groupName}, {_groupDataRaw})
+	set {_groupDataRaw} to stringDatasAPI_setData("GROUP_CREATED", "%unixAPI_dateToUnix(now)%", {_groupDataRaw})
+	set {game_groupsHandler::GROUP_DATA_%{_groupId}%} to {_groupDataRaw}
+	set {game_groupsHandler::GROUP_NAME_TO_ID_%{_groupName}%} to {_groupId}
+	set {game_groupsHandler::GROUP_ID_TO_NAME_%{_groupId}%} to {_groupName}
+
+function game_groupsHandler_groupData_removeData(groupId: text):
+	set {_groupData::*} to game_groupsHandler_getGroupData({_groupId}, "GROUP_NAME")
+	delete {game_groupsHandler::GROUP_NAME_TO_ID_%{_groupData::1}%}
+	delete {game_groupsHandler::GROUP_ID_TO_NAME_%{_groupId}%}
+	delete {game_groupsHandler::GROUP_DATA_%{_groupId}%}
+
+function game_groupsHandler_groupMemberData_addData(groupId: text, playerUUID: text):
+	set {_groupMembers::*} to game_groupsHandler_getGroupMembers({_groupId})
+	add {_playerUUID} to {_groupMembers::*}
+	set {_newGroupMembersList} to join {_groupMembers::*} with delimiter ","
+	set {game_groupsHandler::GROUP_DATA_%{_groupId}%} to stringDatasAPI_setData("GROUP_MEMBERS_LIST", {_newGroupMembersList}, {game_groupsHandler::GROUP_DATA_%{_groupId}%})
+	set {game_groupsHandler::GROUP_DATA_%{_groupId}%} to stringDatasAPI_setData("GROUP_MEMBERS_AMOUNT", "%amount of {_groupMembers::*}%", {game_groupsHandler::GROUP_DATA_%{_groupId}%})
+
+function game_groupsHandler_groupMemberData_removeData(groupId: text, playerUUID: text):
+	set {_groupMembers::*} to game_groupsHandler_getGroupMembers({_groupId})
+	loop {_groupMembers::*}:
+		if loop-value is {_playerUUID}:
+			delete {_groupMembers::%loop-index%}
+	set {_newGroupMembersList} to join {_groupMembers::*} with delimiter ","
+	set {game_groupsHandler::GROUP_DATA_%{_groupId}%} to stringDatasAPI_setData("GROUP_MEMBERS_LIST", {_newGroupMembersList}, {game_groupsHandler::GROUP_DATA_%{_groupId}%})
+	set {game_groupsHandler::GROUP_DATA_%{_groupId}%} to stringDatasAPI_setData("GROUP_MEMBERS_AMOUNT", "%amount of {_groupMembers::*}%", {game_groupsHandler::GROUP_DATA_%{_groupId}%})
+
+function game_groupsHandler_groupInvitationData_addData(groupId: text, invitedPlayerUUID: text) :: text:
+	set {_invitationConfirmationCode} to "%unixAPI_dateToUnix(now)%_%game_groupsHandler_system_getRandomConfirmationCode(16)%"
+	set {-game_groupsHandler::GROUP_INVITATION_%{_groupId}%_%{_invitedPlayerUUID}%} to {_invitationConfirmationCode}
+	return {_invitationConfirmationCode}
+
+function game_groupsHandler_groupInvitationData_removeData(groupId: text, invitedPlayerUUID: text):
+	delete {-game_groupsHandler::GROUP_INVITATION_%{_groupId}%_%{_invitedPlayerUUID}%}
+
+function game_groupsHandler_playerData_addData(playerUUID: text, groupId: text):
+	set {_playerDataRaw} to stringDatasAPI_setData("IN_GROUP", {_groupId})
+	set {game_groupsHandler::PLAYER_DATA_%{_playerUUID}%} to {_playerDataRaw}
+
+function game_groupsHandler_playerData_removeData(playerUUID: text):
+	delete {game_groupsHandler::PLAYER_DATA_%{_playerUUID}%}
+
+function game_groupsHandler_getGroupIdWithName(groupName: text) :: text:
+	return {game_groupsHandler::GROUP_NAME_TO_ID_%{_groupName}%}
+
+function game_groupsHandler_getGroupNameWithId(groupId: text) :: text:
+	return {game_groupsHandler::GROUP_ID_TO_NAME_%{_groupId}%}
+
+function game_groupsHandler_getGroupMembers(groupId: text) :: texts:
+	set {_groupMembersListText} to stringDatasAPI_getData({game_groupsHandler::GROUP_DATA_%{_groupId}%}, "GROUP_MEMBERS_LIST")
+	set {_groupMembersList::*} to {_groupMembersListText} split by ","
+	return {_groupMembersList::*}
+
+function game_groupsHandler_getGroupData(groupId: text, returnDatas: texts) :: texts:
+	loop (amount of {_returnDatas::*}) times:
+		set {_loopData} to stringDatasAPI_getData({game_groupsHandler::GROUP_DATA_%{_groupId}%}, {_returnDatas::%loop-number%})
+		set {_loopData} to (check [{_loopData} is set] ? {_loopData} : "")
+		add {_loopData} to {_datasRecorded::*}
+		delete {_loopData}
+	return {_datasRecorded::*}
+
+function game_groupsHandler_getGroupMembersCapacity(groupId: text) :: number:
+	set {_membersCapacity} to {-game_dataHandler::GROUP_DEFAULT_MAXIMUM_PLAYER_AMOUNT}
+	set {_groupData::*} to game_groupsHandler_getGroupData({_groupId}, "GROUP_ADDITIONAL_MEMBERS_CAPACITY")
+	if {_groupData::1} is set:
+		add ({_groupData::1} parsed as number) to {_membersCapacity}
+	return {_membersCapacity}
+	
+function game_groupsHandler_getPlayerGroupId(playerUUID: text) :: text:
+	return stringDatasAPI_getData({game_groupsHandler::PLAYER_DATA_%{_playerUUID}%}, "IN_GROUP")
+
+function game_groupsHandler_getPlayerGroupName(playerUUID: text) :: text:
+	set {_playerGroupId} to game_groupsHandler_getPlayerGroupId({_playerUUID})
+	return game_groupsHandler_getGroupNameWithId({_playerGroupId})
+
+function game_groupsHandler_getPlayerGroupDisplayName(playerUUID: text, groupNameStyle: text = "") :: text:
+	set {_playerGroupId} to game_groupsHandler_getPlayerGroupId({_playerUUID})
+	set {_playerGroupData::*} to game_groupsHandler_getGroupData({_playerGroupId}, "NAME_DISPLAY_COLOR")
+	if {_playerGroupData::1} is not "":
+		set {_playerGroupNameColor} to colored "&%{_playerGroupData::1}%"
+		return "%{_playerGroupNameColor}%%{_groupNameStyle}%%game_groupsHandler_getGroupNameWithId({_playerGroupId})%"
+	return game_groupsHandler_getGroupNameWithId({_playerGroupId})
+
+function game_groupsHandler_getGroupColorModifierItem(colorName: text) :: item:
+	set {_colorCode} to {-game_dataHandler::COLOR_CODE_%{_colorName}%}
+	return (glowing BOOK named (colored "&eGroup Color Modifier (&f&%{_colorCode}%%game_displayHandler_uppercaseLeadingLetter({_colorName})%&e)") with lore (colored "||&eType: &fGroup Color Modifier||&eColor: &f&%{_colorCode}%%game_displayHandler_uppercaseLeadingLetter({_colorName})%"))
+
+function game_groupsHandler_getGroupExperience(groupId: text) :: number:
+	set {_groupExperience} to stringDatasAPI_getData({game_groupsHandler::GROUP_DATA_%{_groupId}%}, "GROUP_EXPERIENCE")
+	if {_groupExperience} is not set:
+		return 0
+	return {_groupExperience}
+
+function game_groupsHandler_checkPlayerHaveGroup(playerUUID: text) :: boolean:
+	return (check [{game_groupsHandler::PLAYER_DATA_%{_playerUUID}%} is set])
+
+function game_groupsHandler_checkPlayerInGroup(playerUUID: text, groupId: text) :: boolean:
+	set {_groupMembers::*} to game_groupsHandler_getGroupMembers({_groupId})
+	loop {_groupMembers::*}:
+		if loop-value is {_playerUUID}:
+			return true
+	return false
+
+function game_groupsHandler_checkPlayerInvited(playerUUID: text, groupId: text) :: boolean:
+	return (check [{-game_groupsHandler::GROUP_INVITATION_%{_groupId}%_%{_playerUUID}%} is set])
+
+function game_groupsHandler_system_getRandomUnusedGroupId() :: text:
+	while (true):
+		set {_randomSelectedId} to (random integer between 10000000 and 99999999)
+		if {game_groupsHandler::GROUP_DATA_%{_randomSelectedId}%} is not set:
+			return "%{_randomSelectedId}%"
+
+function game_groupsHandler_system_getRandomConfirmationCode(codeLength: number) :: text:
+	set {_generatedConfirmationCode} to ""
+	set {_availableCharacters::*} to "0" and "1" and "2" and "3" and "4" and "5" and "6" and "7" and "8" and "9" and "A" and "B" and "C" and "D" and "E" and "F" and "G" and "H" and "I" and "J" and "K" and "L" and "M" and "N" and "O" and "P" and "Q" and "R" and "S" and "T" and "U" and "V" and "W" and "X" and "Y" and "Z" 
+	loop {_codeLength} times:
+		set {_randomAvailableCharacterIndex} to (random integer between 1 and 36)
+		set {_generatedConfirmationCode} to "%{_generatedConfirmationCode}%%{_availableCharacters::%{_randomAvailableCharacterIndex}%}%"
+	return {_generatedConfirmationCode}

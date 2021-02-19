@@ -1,0 +1,81 @@
+function game_plotsHandler_plotClaim(plot: text, plotOwner: offline player):
+	set {_plotOwnerUUID} to ({_plotOwner}'s UUID)
+	game_plotsHandler_plots_plotData_addData({_plot}, {_plotOwnerUUID})
+	game_plotsHandler_plots_playerData_addData({_plotOwnerUUID}, {_plot})
+
+function game_plotsHandler_plotDelete(plot: text):
+	set {_plotOwnerUUID} to stringDatasAPI_getData({game_plotsHandler_plotData::%{_plot}%}, "PLOT_OWNER")
+	game_plotsHandler_plots_plotData_removeData({_plot})
+	game_plotsHandler_plots_playerData_removeData({_plotOwnerUUID}, {_plot})
+
+function game_plotsHandler_plotChangeOwner(plot: text, newOwnerUUID: text):
+	set {_plotOldOwnerUUID} to stringDatasAPI_getData({game_plotsHandler_plotData::%{_plot}%}, "PLOT_OWNER")
+	set {game_plotsHandler_plotData::%{_plot}%} to stringDatasAPI_setData("PLOT_OWNER", {_newOwnerUUID}, {game_plotsHandler_plotData::%{_plot}%})
+	game_plotsHandler_plots_playerData_removeData({_plotOldOwnerUUID}, {_plot})
+	game_plotsHandler_plots_playerData_addData({_newOwnerUUID}, {_plot})
+
+function game_plotsHandler_plots_plotData_addData(plot: text, ownerUUID: text):
+	set {_plotDataRaw} to stringDatasAPI_setData("PLOT_OWNER", {_ownerUUID})
+	set {_plotDataRaw} to stringDatasAPI_setData("PLOT_CLAIMED_DATE", "%unixAPI_dateToUnix(now)%", {_plotDataRaw})
+	set {game_plotsHandler_plotData::%{_plot}%} to {_plotDataRaw}
+
+function game_plotsHandler_plots_plotData_removeData(plot: text):
+	delete {game_plotsHandler_plotData::%{_plot}%}
+
+function game_plotsHandler_plots_playerData_addData(playerUUID: text, plot: text):
+	set {_previousOwnedPlotsAmount} to (stringDatasAPI_getData({game_plotsHandler_playerData::%{_playerUUID}%}, "OWNED_PLOTS_AMOUNT") parsed as number)
+	if {_previousOwnedPlotsAmount} is set:
+		set {_playerNewOwnedPlotsAmount} to ({_previousOwnedPlotsAmount} + 1)
+		set {_playerNewOwnedPlotsList} to "%stringDatasAPI_getData({game_plotsHandler_playerData::%{_playerUUID}%}, ""OWNED_PLOTS_LIST"")%,%{_plot}%"
+	else:
+		set {_playerNewOwnedPlotsAmount} to 1
+		set {_playerNewOwnedPlotsList} to {_plot}
+	set {_playerDataRaw} to stringDatasAPI_setData("OWNED_PLOTS_AMOUNT", "%{_playerNewOwnedPlotsAmount}%")
+	set {_playerDataRaw} to stringDatasAPI_setData("OWNED_PLOTS_LIST", {_playerNewOwnedPlotsList}, {_playerDataRaw})
+	set {game_plotsHandler_playerData::%{_playerUUID}%} to {_playerDataRaw}
+
+function game_plotsHandler_plots_playerData_removeData(playerUUID: text, plot: text):
+	set {_playerOwnedPlotsList} to stringDatasAPI_getData({game_plotsHandler_playerData::%{_playerUUID}%}, "OWNED_PLOTS_LIST")
+	set {_playerOwnedPlots::*} to {_playerOwnedPlotsList} split by ","
+	loop {_playerOwnedPlots::*}:
+		if loop-value is {_plot}:
+			delete {_playerOwnedPlots::%loop-index%}
+	set {_playerNewOwnedPlotsAmount} to (amount of {_playerOwnedPlots::*})
+	if {_playerNewOwnedPlotsAmount} > 0:
+		set {_playerNewOwnedPlotsList} to join {_playerOwnedPlots::*} with delimiter ","
+		set {_playerDataRaw} to stringDatasAPI_setData("OWNED_PLOTS_AMOUNT", "%{_playerNewOwnedPlotsAmount}%")
+		set {_playerDataRaw} to stringDatasAPI_setData("OWNED_PLOTS_LIST", {_playerNewOwnedPlotsList}, {_playerDataRaw})
+		set {game_plotsHandler_playerData::%{_playerUUID}%} to {_playerDataRaw}
+	else:
+		delete {game_plotsHandler_playerData::%{_playerUUID}%}
+
+function game_plotsHandler_checkLocationInPlot(plotSetting: objects, location: location) :: text:
+	set {_roadSizeSetting} to {_plotSetting::1}
+	set {_plotSizeSetting} to {_plotSetting::2}
+	set {_location} to game_plotsHandler_plotBlockLocation({_location})
+	set {_coordValueFromCenter::*} to ({_location}'s x coords) and ({_location}'s z coords)
+	loop 2 times:
+		set {_loopCoordValue} to {_coordValueFromCenter::%loop-number%}
+		if (abs({_loopCoordValue})) <= ({_roadSizeSetting} / 2):
+			return "ON_ROAD"
+		if {_loopCoordValue} > 0:
+			set {_loopCoordValueDistance} to ({_loopCoordValue} - ({_roadSizeSetting} / 2))
+		else:
+			set {_loopCoordValueDistance} to ({_loopCoordValue} + ({_roadSizeSetting} / 2))
+		if (mod((abs({_loopCoordValueDistance})), ({_roadSizeSetting} + {_plotSizeSetting}))) > {_plotSizeSetting}:
+			return "ON_ROAD"
+		set {_plotId::%loop-number%} to ceil({_loopCoordValueDistance} / ({_roadSizeSetting} + {_plotSizeSetting}))
+	return "%{_location}'s world%;%{_plotId::1}%;%{_plotId::2}%"
+
+function game_plotsHandler_newPlotSettings(roadSizeSetting: number, plotSizeSetting: number) :: objects:
+	return (({_roadSizeSetting} + 2) and {_plotSizeSetting})
+
+function game_plotsHandler_plotBlockLocation(location: location) :: location:
+	set {_location} to (block at {_location}'s location)
+	set {_location}'s x coords to (floor({_location}'s x coords))
+	set {_location}'s z coords to (floor({_location}'s z coords))
+	return {_location}
+
+#function debug():
+#	loop {game_plotsHandler_plotsData::*}:
+#		send "%loop-index%  ->  %loop-value%" to all players

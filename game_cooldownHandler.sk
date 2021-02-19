@@ -1,0 +1,9 @@
+function game_cooldownHandler_newCooldown(cooldownId: text):
+	set {-game_cooldownHandler::COOLDOWN_%{_cooldownId}%} to now
+
+function game_cooldownHandler_checkCooldownReady(cooldownId: text, cooldownDelay: time span) :: boolean:
+	if {-game_cooldownHandler::COOLDOWN_%{_cooldownId}%} is not set:
+		return true
+	if (difference between {-game_cooldownHandler::COOLDOWN_%{_cooldownId}%} and now) is greater than {_cooldownDelay}:
+		return true
+	return false

@@ -1,0 +1,544 @@
+options:
+	level_needed_experience: (({_loopLevel} ^ 2) * 5)
+
+function game_dataHandler_updateGeneralData(loadThread: text):
+
+	set {-game_dataHandler::SERVER_SPAWN} to (location at (-20.5, 52.5, -36.5) in world("plots"))
+	set {-game_dataHandler::SERVER_SPAWN}'s yaw to 45
+	set {-game_dataHandler::SERVER_SPAWN}'s pitch to 0.1
+
+	set {-game_dataHandler::WARP_CRATES} to (location at (-24.5, 52.5, -24.5) in world("plots"))
+	set {-game_dataHandler::WARP_CRATES}'s yaw to -45
+	set {-game_dataHandler::WARP_CRATES}'s pitch to 0.1
+
+	set {-game_dataHandler::WARP_RANKS} to (location at (-35.5, 64.5, -21.5) in world("plots"))
+	set {-game_dataHandler::WARP_RANKS}'s yaw to 45
+	set {-game_dataHandler::WARP_RANKS}'s pitch to 0.1
+
+	set {-game_dataHandler::PLOT_SETTING_PLOT_SIZE} to 51
+	set {-game_dataHandler::PLOT_SETTING_ROAD_SIZE} to 5
+
+	set {-game_dataHandler::VOTE_REWARD} to "CRATE_KEY_ITEM:VOTE_CRATE:1"
+	set {-game_dataHandler::BOOST_REWARD} to "CRATE_KEY_ITEM:BOOST_CRATE:1"
+
+	set {-game_dataHandler::COLOR_CODE_RED} to "C"
+	set {-game_dataHandler::COLOR_CODE_ORANGE} to "6"
+	set {-game_dataHandler::COLOR_CODE_YELLOW} to "E"
+	set {-game_dataHandler::COLOR_CODE_GREEN} to "A"
+	set {-game_dataHandler::COLOR_CODE_AQUA} to "B"
+	set {-game_dataHandler::COLOR_CODE_BLUE} to "9"
+	set {-game_dataHandler::COLOR_CODE_PINK} to "D"
+	set {-game_dataHandler::COLOR_CODE_WHITE} to "F"
+
+	set {-game_dataHandler::PLAYER_EXPERIENCE_PER_TOKEN} to (10 * (10^3))
+
+	set {-game_dataHandler::PLAYER_DEFAULT_MAXIMUM_GENERATORS_AMOUNT} to 25
+	set {-game_dataHandler::PLAYER_DEFAULT_MAXIMUM_MACHINES_AMOUNT} to 4
+
+	set {-game_dataHandler::PLOT_DEFAULT_MAXIMUM_GENERATORS_AMOUNT} to 10
+	set {-game_dataHandler::PLOT_DEFAULT_MAXIMUM_MACHINES_AMOUNT} to 2
+
+	set {-game_dataHandler::PLOT_STAT_DEFAULT_VALUE::LOOT_WORTH_MULTIPLIER} to 0
+	set {-game_dataHandler::PLOT_STAT_DEFAULT_VALUE::GENERATOR_CAPACITY} to 0
+
+	set {-game_dataHandler::GROUP_DEFAULT_MAXIMUM_CHARACTERS_IN_NAME} to 8
+	set {-game_dataHandler::GROUP_DEFAULT_MAXIMUM_PLAYER_AMOUNT} to 8
+
+	set {-game_dataHandler::MACHINE_STAT_TYPES} to "LOOT_WORTH_MULTIPLIER,GENERATOR_CAPACITY,MACHINE_CAPACITY"
+
+	wait 5 ticks
+
+	game_dataHandler_registerMachineData("LOOT_WORTH", 1, "LOOT_WORTH_MULTIPLIER:0.1")
+	game_dataHandler_registerMachineData("LOOT_WORTH", 2, "LOOT_WORTH_MULTIPLIER:0.2")
+	game_dataHandler_registerMachineData("LOOT_WORTH", 3, "LOOT_WORTH_MULTIPLIER:0.3")
+	game_dataHandler_registerMachineDisplay("LOOT_WORTH", 1, COMMAND_BLOCK)
+	game_dataHandler_registerMachineDisplay("LOOT_WORTH", 2, COMMAND_BLOCK)
+	game_dataHandler_registerMachineDisplay("LOOT_WORTH", 3, COMMAND_BLOCK)
+
+	game_dataHandler_registerMachineData("GENERATOR_CAPACITY", 1, "GENERATOR_CAPACITY:1")
+	game_dataHandler_registerMachineData("GENERATOR_CAPACITY", 2, "GENERATOR_CAPACITY:2")
+	game_dataHandler_registerMachineData("GENERATOR_CAPACITY", 3, "GENERATOR_CAPACITY:3")
+	game_dataHandler_registerMachineDisplay("GENERATOR_CAPACITY", 1, COMMAND_BLOCK)
+	game_dataHandler_registerMachineDisplay("GENERATOR_CAPACITY", 2, COMMAND_BLOCK)
+	game_dataHandler_registerMachineDisplay("GENERATOR_CAPACITY", 3, COMMAND_BLOCK)
+
+	game_dataHandler_registerMachineData("BEACON", 1, "")
+	game_dataHandler_registerMachineDisplay("BEACON", 1, BEACON)
+
+	game_dataHandler_registerMachineData("DEVELOPMENT", 1, "GENERATOR_CAPACITY:990,MACHINE_CAPACITY:998")
+	game_dataHandler_registerMachineDisplay("DEVELOPMENT", 1, COMMAND_BLOCK)
+
+	wait 5 ticks
+
+	game_dataHandler_registerAnnouncement(1, "Remember to vote for us with &f/wgvote &bfor rewards!")
+	game_dataHandler_registerAnnouncement(2, "Remember to join our discord with &f/discord&b.")
+	game_dataHandler_registerAnnouncement(3, "Place down machines to receive boosts.")
+	game_dataHandler_registerAnnouncement(4, "You can teleport to crates and rank features list with &f/crates &band &f/ranks&b.")
+
+	game_dataHandler_registerRankData("Member", 0, "&7", "", 0)
+	game_dataHandler_registerRankData("Coal", 1, "&8", "COAL", 1)
+	game_dataHandler_registerRankData_upgradableRank_upgradePrice(1, (10 * (10 ^ 3)))
+	game_dataHandler_registerRankData("Iron", 2, "&f", "IRON", 2)
+	game_dataHandler_registerRankData_upgradableRank_upgradePrice(2, (500 * (10 ^ 3)))
+	game_dataHandler_registerRankData("Gold", 3, "&e", "GOLD", 3)
+	game_dataHandler_registerRankData_upgradableRank_upgradePrice(3, (2.5 * (10 ^ 6)))
+	game_dataHandler_registerRankData("Redstone", 4, "&c", "REDSTONE", 4)
+	game_dataHandler_registerRankData_upgradableRank_upgradePrice(4, (50 * (10 ^ 6)))
+	game_dataHandler_registerRankData("Lapis", 5, "&9", "LAPIS", 5)
+	game_dataHandler_registerRankData_upgradableRank_upgradePrice(5, (750 * (10 ^ 6)))
+	game_dataHandler_registerRankData("Diamond", 6, "&b", "DIAMOND", 6)
+	game_dataHandler_registerRankData_upgradableRank_upgradePrice(6, (3.5 * (10 ^ 9)))
+	game_dataHandler_registerRankData("Emerald", 7, "&a", "EMERALD", 7)
+	game_dataHandler_registerRankData_upgradableRank_upgradePrice(7, (20 * (10 ^ 9)))
+
+	game_dataHandler_registerRankData("Booster", 50, "&6", "BOOSTER")
+	game_dataHandler_registerRankData("Nerd", 51, "&6", "NERD")
+
+	game_dataHandler_registerRankData("Helper", 97, "&d", "HELPER")
+	game_dataHandler_registerRankData("Mod", 98, "&2", "MOD")
+	game_dataHandler_registerRankData("Admin", 99, "&c", "ADMIN")
+
+	wait 5 ticks
+
+	game_dataHandler_registerUpgradableRankPermission("BONUS_GENERATORS", ("COAL" and "IRON" and "GOLD" and "REDSTONE" and "LAPIS" and "DIAMOND" and "EMERALD"), (2 and 4 and 6 and 8 and 10 and 12 and 14))
+	game_dataHandler_registerUpgradableRankPermission("BONUS_MACHINES", ("COAL" and "IRON" and "GOLD" and "REDSTONE" and "LAPIS" and "DIAMOND" and "EMERALD"), (0 and 0 and 0 and 0 and 0 and 2 and 2))
+	game_dataHandler_registerUpgradableRankPermission("FLY_PERMISSION", ("COAL" and "IRON" and "GOLD" and "REDSTONE" and "LAPIS" and "DIAMOND" and "EMERALD"), (0 and 0 and 0 and 1 and 1 and 1 and 1))
+	game_dataHandler_registerUpgradableRankPermission("FLY_PERMISSION", ("HELPER" and "MOD" and "ADMIN"), (1 and 1 and 1))
+	game_dataHandler_registerUpgradableRankPermission("TELEPORT_PERMISSION", ("HELPER" and "MOD" and "ADMIN"), (1 and 1 and 1))
+	game_dataHandler_registerUpgradableRankPermission("STAFF_CHAT_PERMISSION", ("HELPER" and "MOD" and "ADMIN"), (1 and 1 and 1))
+	game_dataHandler_registerUpgradableRankPermission("INVSEE_PERMISSION", ("HELPER" and "MOD" and "ADMIN"), (1 and 1 and 1))
+	game_dataHandler_registerUpgradableRankPermission("VANISH_PERMISSION", ("HELPER" and "MOD" and "ADMIN"), (1 and 1 and 1))
+	game_dataHandler_registerUpgradableRankPermission("PUNISHMENT_SYSTEM_PERMISSION", ("HELPER" and "MOD" and "ADMIN"), (1 and 2 and 3))
+	game_dataHandler_registerUpgradableRankPermission("AUCTION_ADMIN_PERMISSION", ("HELPER" and "MOD" and "ADMIN"), (1 and 1 and 1))
+
+	game_leaderboardHandler_newLeaderboard("BALANCE_LEADERBOARD", (location at (-34.5, 56, -22.5) in world("plots")))
+
+	add "-20.5:56.5:-36.5:-31.5:55.5:-25.5:45:15:6" to {_tutorialData::*}
+	add "20:80:&c&lWealthGens:&eWelcome to WealthGens" to {_tutorialData::*}
+	add "6" to {_tutorialData::*}
+	add "-31.5:68.5:-31.5:-34.5:67.5:-34.5:135:0:12" to {_tutorialData::*}
+	add "20:80::&a&lPlace Generators &eto Generate Loots:100:80::&a&lUpgrade Generators &eto Earn Faster" to {_tutorialData::*}
+	add "12" to {_tutorialData::*}
+	add "-25.5:68.5:-25.5:-22.5:67.5:-22.5:-45:0:12" to {_tutorialData::*}
+	add "20:80::&6&lPlace Machines &eto Receive &6&lPlot Boosts:100:80::&6&lMachines &eAre &c&lNot Upgradable" to {_tutorialData::*}
+	add "12" to {_tutorialData::*}
+	add "-29.5:56.5:-29.5:-32.5:55:-32.5:135:17.5:12" to {_tutorialData::*}
+	add "20:120::&eManage &a&lGenerators &eand &a&lMachines &ewith &a&lControl Panel:100:120::&a&lBuy Items &eYou Need From &a&lItem Shop" to {_tutorialData::*}
+	add "12" to {_tutorialData::*}
+	add "-34.5:66.5:-22.5:-39.5:66.5:-17.5:45:0:18" to {_tutorialData::*}
+	add "20:120::&ePurchase &d&lRanks &eWith &d&lCoins:100:120::&eEarn &d&lExperience &eBy &d&lSelling Items:100:120::&eEach &d&lLevel &eWill Reward You &d&lItems" to {_tutorialData::*}
+	add "18" to {_tutorialData::*}
+	add "-27.5:55.5:-27.5:-23.5:53.5:-23.5:-45:25.5:12" to {_tutorialData::*}
+	add "20:80::&b&lLevel Rewards &eIncludes &b&lCrate Keys:100:80::&eUse &b&lCrate Keys &eto Unbox &b&lCrates" to {_tutorialData::*}
+	add "12" to {_tutorialData::*}
+	add "-20.5:58.5:-36.5:-20.5:54.5:-36.5:45:0:6" to {_tutorialData::*}
+	add "20:80::&eNow It's Time To &a&lBegin The Game&e..." to {_tutorialData::*}
+	add "6" to {_tutorialData::*}
+
+	set {-game_dataHandler::GAME_TUTORIAL_DATA::*} to {_tutorialData::*}
+
+	game_threadHandler_updateThread({_loadThread}, "LOADED")
+
+function game_dataHandler_updateGeneratorsData(loadThread: text):
+	game_dataHandler_registerGeneratorData(1, 250, 10)
+	game_dataHandler_registerGeneratorData(2, (1.5 * (10^3)), 15)
+	game_dataHandler_registerGeneratorData(3, (5 * (10^3)), 25)
+	game_dataHandler_registerGeneratorData(4, (15 * (10^3)), 40)
+	game_dataHandler_registerGeneratorData(5, (40 * (10^3)), 65)
+	game_dataHandler_registerGeneratorData(6, (110 * (10^3)), 95)
+	game_dataHandler_registerGeneratorData(7, (240 * (10^3)), 120)
+	game_dataHandler_registerGeneratorData(8, (580 * (10^3)), 180)
+	game_dataHandler_registerGeneratorData(9, (960 * (10^3)), 250)
+	game_dataHandler_registerGeneratorData(10, (2.3 * (10^6)), 350)
+	game_dataHandler_registerGeneratorData(11, (5.9 * (10^6)), 500)
+	game_dataHandler_registerGeneratorData(12, (10.9 * (10^6)), 680)
+	game_dataHandler_registerGeneratorData(13, (25 * (10^6)), 850)
+	game_dataHandler_registerGeneratorData(14, (52.9 * (10^6)), (1.1 * (10^3)))
+	game_dataHandler_registerGeneratorData(15, (119 * (10^6)), (1.4 * (10^3)))
+	game_dataHandler_registerGeneratorData(16, (176 * (10^6)), (1.8 * (10^3)))
+	game_dataHandler_registerGeneratorData(17, (270 * (10^6)), (2.5 * (10^3)))
+	game_dataHandler_registerGeneratorData(18, (443 * (10^6)), (3.2 * (10^3)))
+	game_dataHandler_registerGeneratorData(19, (652 * (10^6)), (4.1 * (10^3)))
+	game_dataHandler_registerGeneratorData(20, (947 * (10^6)), (5.2 * (10^3)))
+	game_dataHandler_registerGeneratorData(21, (1.4 * (10^9)), (6.4 * (10^3)))
+	game_dataHandler_registerGeneratorData(22, (1.9 * (10^9)), (7.9 * (10^3)))
+	game_dataHandler_registerGeneratorData(23, (2.5 * (10^9)), (9.4 * (10^3)))
+	game_dataHandler_registerGeneratorData(24, (3.7 * (10^9)), (11 * (10^3)))
+	game_dataHandler_registerGeneratorData(25, (4.9 * (10^9)), (15 * (10^3)))
+	wait 5 ticks
+	game_dataHandler_registerGeneratorDisplay(1, "Wheat Generator", HAY_BLOCK, (glowing WHEAT_ITEM named "&eWheat"))
+	game_dataHandler_registerGeneratorDisplay(2, "Pumpkin Generator", PUMPKIN, (glowing PUMPKIN_PIE named "&ePumpkin"))
+	game_dataHandler_registerGeneratorDisplay(3, "Melon Generator", MELON, (glowing MELON_SLICE named "&eMelon"))
+	game_dataHandler_registerGeneratorDisplay(4, "Mushroom Generator", HUGE_RED_MUSHROOM:14, (glowing RED_MUSHROOM named "&eMushroom"))
+	game_dataHandler_registerGeneratorDisplay(5, "Brick Generator", CLAY_BRICKS_BLOCK, (glowing BRICK_ITEM named "&eBrick"))
+	game_dataHandler_registerGeneratorDisplay(6, "Coal Generator", COAL_BLOCK, (glowing COAL_ITEM named "&eCoal"))
+	game_dataHandler_registerGeneratorDisplay(7, "Iron Generator", IRON_BLOCK, (glowing IRON_BAR named "&eIron"))
+	game_dataHandler_registerGeneratorDisplay(8, "Gold Generator", GOLD_BLOCK, (glowing GOLD_BAR named "&eGold"))
+	game_dataHandler_registerGeneratorDisplay(9, "Redstone Generator", REDSTONE_BLOCK, (glowing REDSTONE named "&eRedstone"))
+	game_dataHandler_registerGeneratorDisplay(10, "Lapis Generator", LAPIS_BLOCK, (glowing LAPIS named "&eLapis"))
+	game_dataHandler_registerGeneratorDisplay(11, "Diamond Generator", DIAMOND_BLOCK, (glowing DIAMOND named "&eDiamond"))
+	game_dataHandler_registerGeneratorDisplay(12, "Emerald Generator", EMERALD_BLOCK, (glowing EMERALD named "&eEmerald"))
+	game_dataHandler_registerGeneratorDisplay(13, "Obsidian Generator", OBSIDIAN, (glowing CHARCOAL named "&eObsidian"))
+	game_dataHandler_registerGeneratorDisplay(14, "Ancient Generator", MOSSY_COBBLE_STONE, (glowing FERMENTED_SPIDER_EYE named "&eAncient Token"))
+	game_dataHandler_registerGeneratorDisplay(15, "Prismarine Generator", PRISMARINE, (glowing PRISMARINE_SHARD named "&ePrismarine Shard"))
+	game_dataHandler_registerGeneratorDisplay(16, "Sea Lantern Generator", SEA_LANTERN, (glowing PRISMARINE_CRYSTAL named "&ePrismarine Crystal"))
+	game_dataHandler_registerGeneratorDisplay(17, "Quartz Generator", NETHER_QUARTZ_ORE, (glowing QUARTZ_ITEM named "&eQuartz"))
+	game_dataHandler_registerGeneratorDisplay(18, "Nether Brick Generator", NETHER_BRICK_BLOCK, (glowing NETHER_BRICK_ITEM named "&eNether Brick"))
+	game_dataHandler_registerGeneratorDisplay(19, "Soul Sand Generator", SOUL_SAND, (glowing NETHER_WART_ITEM named "&eSoul"))
+	game_dataHandler_registerGeneratorDisplay(20, "Magma Generator", MAGMA_BLOCK, (glowing MAGMA_CREAM named "&eMagma"))
+	game_dataHandler_registerGeneratorDisplay(21, "Glow Stone Generator", GLOWSTONE, (glowing GLOWSTONE_DUST named "&eGlowstone"))
+	game_dataHandler_registerGeneratorDisplay(22, "Endstone Generator", ENDSTONE_BRICKS, (glowing PURPLE_DYE named "&eEnd Fruit"))
+	game_dataHandler_registerGeneratorDisplay(23, "Bedrock Generator", BEDROCK, (glowing GUNPOWDER named "&eBedrock"))
+	game_dataHandler_registerGeneratorDisplay(24, "Atom Generator", WET_SPONGE, (glowing FIREWORK_STAR named "&eAtom"))
+	game_dataHandler_registerGeneratorDisplay(25, "Cocaine Generator", UPSIDE-DOWN_DOUBLE_STONE_SLAB_ITEM, (glowing SUGAR named "&eCocaine"))
+	game_threadHandler_updateThread({_loadThread}, "LOADED")
+
+function game_dataHandler_updateShopData(loadThread: text):
+
+	set {-game_dataHandler::CURRENCY_DISPLAY_BALANCE} to "&e⛃"
+	set {-game_dataHandler::CURRENCY_DISPLAY_TOKEN} to "&c⛂"
+
+	game_dataHandler_registerShopData("BLOCKS", 1, game_displayHandler_rawItemTypeLabel(16 of GRASS), "BALANCE", (5 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 2, game_displayHandler_rawItemTypeLabel(16 of DIRT), "BALANCE", (10 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 3, game_displayHandler_rawItemTypeLabel(16 of 1), "BALANCE", (20 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 4, game_displayHandler_rawItemTypeLabel(16 of COBBLE_STONE), "BALANCE", (15 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 5, game_displayHandler_rawItemTypeLabel(16 of GRANITE), "BALANCE", (100 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 6, game_displayHandler_rawItemTypeLabel(16 of DIORITE), "BALANCE", (100 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 7, game_displayHandler_rawItemTypeLabel(16 of ANDESITE), "BALANCE", (100 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 8, game_displayHandler_rawItemTypeLabel(16 of POLISHED_GRANITE), "BALANCE", (3 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 9, game_displayHandler_rawItemTypeLabel(16 of POLISHED_DIORITE), "BALANCE", (3 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 10, game_displayHandler_rawItemTypeLabel(16 of POLISHED_ANDESITE), "BALANCE", (3 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 11, game_displayHandler_rawItemTypeLabel(16 of STONE_BRICK:0), "BALANCE", (1 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 12, game_displayHandler_rawItemTypeLabel(16 of OAK_LOG), "BALANCE", (5 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 13, game_displayHandler_rawItemTypeLabel(16 of SPRUCE_LOG), "BALANCE", (5 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 14, game_displayHandler_rawItemTypeLabel(16 of BIRCH_LOG), "BALANCE", (5 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 15, game_displayHandler_rawItemTypeLabel(16 of JUNGLE_LOG), "BALANCE", (5 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 16, game_displayHandler_rawItemTypeLabel(16 of ACACIA_LOG), "BALANCE", (5 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 17, game_displayHandler_rawItemTypeLabel(16 of DARK_OAK_LOG), "BALANCE", (5 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 18, game_displayHandler_rawItemTypeLabel(16 of OAK_PLANK), "BALANCE", (50 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 19, game_displayHandler_rawItemTypeLabel(16 of SPRUCE_PLANK), "BALANCE", (50 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 20, game_displayHandler_rawItemTypeLabel(16 of BIRCH_PLANK), "BALANCE", (50 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 21, game_displayHandler_rawItemTypeLabel(16 of JUNGLE_PLANK), "BALANCE", (50 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 22, game_displayHandler_rawItemTypeLabel(16 of ACACIA_PLANK), "BALANCE", (50 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 23, game_displayHandler_rawItemTypeLabel(16 of DARK_OAK_PLANK), "BALANCE", (50 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 24, game_displayHandler_rawItemTypeLabel(16 of SANDSTONE), "BALANCE", (25 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 25, game_displayHandler_rawItemTypeLabel(16 of SMOOTH_SANDSTONE), "BALANCE", (50 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 26, game_displayHandler_rawItemTypeLabel(16 of CHISELED_SANDSTONE), "BALANCE", (150 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 27, game_displayHandler_rawItemTypeLabel(16 of QUARTZ_BLOCK), "TOKEN", (2 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 28, game_displayHandler_rawItemTypeLabel(16 of CHISELLED_QUARTZ_BLOCK), "TOKEN", (4 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 29, game_displayHandler_rawItemTypeLabel(16 of QUARTZ_BLOCK:2), "TOKEN", (6 * (10^0)), "")
+	game_dataHandler_registerShopData("MISCELLANEOUS", 1, game_displayHandler_rawItemTypeLabel(1 of WATER_BUCKET), "BALANCE", (100 * (10^0)), "")
+	game_dataHandler_registerShopData("MISCELLANEOUS", 2, game_displayHandler_rawItemTypeLabel(1 of HOPPER), "BALANCE", (50 * (10^3)), "")
+#	game_dataHandler_registerShopData("MISCELLANEOUS", 3, game_displayHandler_rawItemTypeLabel(8 of SIGN_ITEM), "BALANCE", (1 * (10^3)), "")
+#	game_dataHandler_registerShopData("MISCELLANEOUS", 4, game_displayHandler_rawItemTypeLabel(1 of CHEST), "BALANCE", (500 * (10^0)), "")
+	game_dataHandler_registerShopData("MISCELLANEOUS", 3, game_displayHandler_rawItemTypeLabel(16 of PACKED_ICE), "BALANCE", (150 * (10^3)), "")
+	game_dataHandler_registerShopData("MISCELLANEOUS", 4, game_displayHandler_rawItemTypeLabel(16 of TORCH), "BALANCE", (5 * (10^3)), "")
+	game_dataHandler_registerShopData("MISCELLANEOUS", 5, game_displayHandler_rawItemTypeLabel(16 of STRING), "BALANCE", (15 * (10^3)), "")
+	game_dataHandler_registerShopData("MISCELLANEOUS", 6, game_displayHandler_rawItemTypeLabel(1 of ITEM_FRAME), "TOKEN", (15 * (10^0)), "")
+	game_dataHandler_registerShopData("MISCELLANEOUS", 7, game_displayHandler_rawItemTypeLabel(4 of SLIME_BLOCK), "TOKEN", (20 * (10^0)), "")
+	wait 5 ticks
+	game_dataHandler_registerShopData("CRAFTING_DISABLED", 1, game_displayHandler_rawItemTypeLabel(1 of BEACON), "TOKEN", (1 * (10^12)), "")
+	game_dataHandler_registerShopData("CRAFTING_DISABLED", 2, game_displayHandler_rawItemTypeLabel(1 of IRON_INGOT), "TOKEN", (1 * (10^12)), "")
+	game_dataHandler_registerShopData("CRAFTING_DISABLED", 3, game_displayHandler_rawItemTypeLabel(1 of IRON_NUGGET), "TOKEN", (1 * (10^12)), "")
+	game_dataHandler_registerShopData("CRAFTING_DISABLED", 4, game_displayHandler_rawItemTypeLabel(1 of EMERALD), "TOKEN", (1 * (10^12)), "")
+	game_dataHandler_registerShopData("CRAFTING_DISABLED", 5, game_displayHandler_rawItemTypeLabel(1 of SLIMEBALL), "TOKEN", (1 * (10^12)), "")
+	wait 5 ticks
+	set {_decorationBlockTypes::*} to GLASS_BLOCK and WOOL_BLOCK and TERRACOTTA
+	set {_decorationBlockCost::*} to (5 * (10^3)) and (5 * (10^3)) and (10 * (10^3))
+	loop 3 times:
+		set {_loopItem} to {_decorationBlockTypes::%loop-number%}
+		loop 16 times:
+			set {_loopSlot} to (((loop-number-1) - 1) * 16 + loop-number-2)
+			set {_loopItemSeconaryId} to ((loop-number-2) - 1)
+			set {_loopItem}'s durability to {_loopItemSeconaryId}
+			game_dataHandler_registerShopData("DECORATIONS", {_loopSlot}, game_displayHandler_rawItemTypeLabel(16 of {_loopItem}), "BALANCE", {_decorationBlockCost::%loop-number-1%}, "")
+	wait 5 ticks
+#	game_dataHandler_registerShopData("DECORATIONS", 49, game_displayHandler_rawItemTypeLabel(16 of SEA_LANTERN), "TOKEN", (50 * (10^0)), "")
+	game_dataHandler_registerShopData("DECORATIONS", 49, game_displayHandler_rawItemTypeLabel(1 of DEAD_SHRUBS), "TOKEN", (150 * (10^0)), "")
+	game_dataHandler_registerShopData("DECORATIONS", 50, game_displayHandler_rawItemTypeLabel(1 of DANDELION), "TOKEN", (10 * (10^0)), "")
+	loop 9 times:
+		set {_loopItem} to RED_POPPIES
+		set {_loopItemSeconaryId} to (loop-number - 1)
+		set {_loopItem}'s durability to {_loopItemSeconaryId}
+		set {_loopItemSlot} to (50 + loop-number)
+		game_dataHandler_registerShopData("DECORATIONS", {_loopItemSlot}, game_displayHandler_rawItemTypeLabel(1 of {_loopItem}), "TOKEN", (10 * (10^0)), "")
+	game_dataHandler_registerShopData("TOOLS", 1, (1 of game_sellwandHandler_getWand(1, 300, 300)), "BALANCE", (20 * (10^6)), "")
+	game_dataHandler_registerShopData("TOOLS", 2, (1 of game_sellwandHandler_getWand(1.1, 100, 100)), "TOKEN", (100 * (10^0)), "")
+	game_dataHandler_registerShopData("TOOLS", 3, (1 of game_sellwandHandler_getWand(1.2, 125, 125)), "TOKEN", (300 * (10^0)), "")
+	game_dataHandler_registerShopData("TOOLS", 4, (1 of game_sellwandHandler_getWand(1.3, 150, 150)), "TOKEN", (500 * (10^0)), "")
+	game_dataHandler_registerShopData("TOOLS", 5, (1 of game_sellwandHandler_getWand(1.4, 175, 175)), "TOKEN", (900 * (10^0)), "")
+	game_dataHandler_registerShopData("TOOLS", 6, (1 of game_sellwandHandler_getWand(1.5, 200, 200)), "TOKEN", (1.3 * (10^3)), "")
+	game_dataHandler_registerShopData("TOOLS", 7, (1 of game_sellwandHandler_getWand(1.6, 225, 225)), "TOKEN", (3 * (10^3)), "")
+	game_dataHandler_registerShopData("TOOLS", 8, game_displayHandler_rawItemTypeLabel(1 of SHEARS), "BALANCE", (1.5 * (10^3)), "Starter Shear")
+	game_dataHandler_registerShopData("TOOLS", 9, game_displayHandler_rawItemTypeLabel(1 of IRON_SHOVEL), "BALANCE", (500 * (10^0)), "Starter Shovel")
+	game_dataHandler_registerShopData("TOOLS", 10, game_displayHandler_rawItemTypeLabel(1 of IRON_PICKAXE), "BALANCE", (500 * (10^0)), "Starter Pickaxe")
+	game_dataHandler_registerShopData("TOOLS", 11, game_displayHandler_rawItemTypeLabel(1 of IRON_AXE), "BALANCE", (500 * (10^0)), "Starter Axe")
+	game_dataHandler_registerShopData("TOOLS", 12, game_displayHandler_rawItemTypeLabel(1 of DIAMOND_SHOVEL), "BALANCE", (5 * (10^6)), "Advanced Shovel")
+	game_dataHandler_registerShopData("TOOLS", 13, game_displayHandler_rawItemTypeLabel(1 of DIAMOND_PICKAXE), "BALANCE", (5 * (10^6)), "Advanced Pickaxe")
+	game_dataHandler_registerShopData("TOOLS", 14, game_displayHandler_rawItemTypeLabel(1 of DIAMOND_AXE), "BALANCE", (5 * (10^6)), "Advanced Axe")
+	game_dataHandler_registerShopData("TOOLS", 15, game_displayHandler_rawItemTypeLabel(1 of DIAMOND_SHOVEL of EFFICIENCY 1), "TOKEN", (15 * (10^0)), "Expert Shovel")
+	game_dataHandler_registerShopData("TOOLS", 16, game_displayHandler_rawItemTypeLabel(1 of DIAMOND_PICKAXE of EFFICIENCY 1), "TOKEN", (15 * (10^0)), "Expert Pickaxe")
+	game_dataHandler_registerShopData("TOOLS", 17, game_displayHandler_rawItemTypeLabel(1 of DIAMOND_AXE of EFFICIENCY 1), "TOKEN", (15 * (10^0)), "Expert Axe")
+	game_dataHandler_registerShopData("TOOLS", 18, (1 of game_groupsHandler_getGroupColorModifierItem("YELLOW")), "TOKEN", (250 * (10^0)), "")
+	wait 5 ticks
+	game_dataHandler_registerShopData("MACHINERY", 1, (1 of game_generatorsHandler_getGeneratorItem(1)), "BALANCE", 250, "")
+	game_dataHandler_registerShopData("MACHINERY", 2, (1 of game_machinesHandler_getMachineItem("BEACON", 1)), "TOKEN", 2000, "")
+	wait 5 ticks
+	game_dataHandler_registerShopData("REDSTONE", 1, game_displayHandler_rawItemTypeLabel(1 of REDSTONE), "BALANCE", (10 * (10^0)), "")
+	game_dataHandler_registerShopData("REDSTONE", 2, game_displayHandler_rawItemTypeLabel(1 of REDSTONE_TORCH_ON), "BALANCE", (10 * (10^0)), "")
+	game_dataHandler_registerShopData("REDSTONE", 3, game_displayHandler_rawItemTypeLabel(1 of REDSTONE_REPEATER_ITEM), "BALANCE", (100 * (10^3)), "")
+	game_dataHandler_registerShopData("REDSTONE", 4, game_displayHandler_rawItemTypeLabel(1 of REDSTONE_COMPARATOR_ITEM), "BALANCE", (750 * (10^3)), "")
+	game_dataHandler_registerShopData("REDSTONE", 5, game_displayHandler_rawItemTypeLabel(1 of WOODEN_BUTTON), "BALANCE", (10 * (10^0)), "")
+	game_dataHandler_registerShopData("REDSTONE", 6, game_displayHandler_rawItemTypeLabel(1 of STONE_BUTTON), "BALANCE", (10 * (10^0)), "")
+	game_dataHandler_registerShopData("REDSTONE", 7, game_displayHandler_rawItemTypeLabel(1 of LEVER), "BALANCE", (10 * (10^0)), "")
+	game_dataHandler_registerShopData("REDSTONE", 8, game_displayHandler_rawItemTypeLabel(1 of TRIPWIRE_HOOK), "BALANCE", (50 * (10^3)), "")
+	game_dataHandler_registerShopData("REDSTONE", 9, game_displayHandler_rawItemTypeLabel(1 of WOODEN_PRESSURE_PLATE), "BALANCE", (10 * (10^0)), "")
+	game_dataHandler_registerShopData("REDSTONE", 10, game_displayHandler_rawItemTypeLabel(1 of STONE_PRESSURE_PLATE), "BALANCE", (10 * (10^0)), "")
+	game_dataHandler_registerShopData("REDSTONE", 11, game_displayHandler_rawItemTypeLabel(1 of GOLDEN_PRESSURE_PLATE), "BALANCE", (50 * (10^3)), "")
+	game_dataHandler_registerShopData("REDSTONE", 12, game_displayHandler_rawItemTypeLabel(1 of IRON_PRESSURE_PLATE), "BALANCE", (50 * (10^3)), "")
+	game_dataHandler_registerShopData("REDSTONE", 13, game_displayHandler_rawItemTypeLabel(1 of IRON_TRAPDOOR), "BALANCE", (500 * (10^3)), "")
+	game_dataHandler_registerShopData("REDSTONE", 14, game_displayHandler_rawItemTypeLabel(1 of IRON_DOOR_ITEM), "BALANCE", (1 * (10^6)), "")
+	game_dataHandler_registerShopData("REDSTONE", 15, game_displayHandler_rawItemTypeLabel(1 of DAYLIGHT_SENSOR), "BALANCE", (50 * (10^6)), "")
+	game_dataHandler_registerShopData("REDSTONE", 16, game_displayHandler_rawItemTypeLabel(1 of REDSTONE_BLOCK), "BALANCE", (90 * (10^0)), "")
+	game_dataHandler_registerShopData("REDSTONE", 17, game_displayHandler_rawItemTypeLabel(1 of DISPENSER), "BALANCE", (5 * (10^6)), "")
+	game_dataHandler_registerShopData("REDSTONE", 18, game_displayHandler_rawItemTypeLabel(1 of DROPPER), "BALANCE", (5 * (10^6)), "")
+	game_dataHandler_registerShopData("REDSTONE", 19, game_displayHandler_rawItemTypeLabel(1 of 123), "BALANCE", (25 * (10^6)), "") # REDSTONE_LAMP
+	game_dataHandler_registerShopData("REDSTONE", 20, game_displayHandler_rawItemTypeLabel(1 of 33), "BALANCE", (10 * (10^6)), "") # NORMAL_PISTON
+	game_dataHandler_registerShopData("REDSTONE", 21, game_displayHandler_rawItemTypeLabel(1 of STICKY_PISTON_ITEM), "BALANCE", (25 * (10^6)), "")
+	game_dataHandler_registerShopData("REDSTONE", 22, game_displayHandler_rawItemTypeLabel(8 of NOTE_BLOCK), "TOKEN", (2 * (10^0)), "")
+	game_threadHandler_updateThread({_loadThread}, "LOADED")
+
+function game_dataHandler_updateCrateData(loadThread: text):
+	set {-game_dataHandler::CRATE_IN_PLOT} to "plots;0;0"
+	set {-game_dataHandler::CRATE_LOCATION_1} to (location at (-19.5, 52.5, -24.5) in world("plots"))
+	set {-game_dataHandler::CRATE_TYPE_1} to "COMMON_CRATE"
+	set {-game_dataHandler::CRATE_LOCATION_2} to (location at (-24.5, 52.5, -19.5) in world("plots"))
+	set {-game_dataHandler::CRATE_TYPE_2} to "UNCOMMON_CRATE"
+	set {-game_dataHandler::CRATE_LOCATION_3} to (location at (-19.5, 52.5, -22.5) in world("plots"))
+	set {-game_dataHandler::CRATE_TYPE_3} to "RARE_CRATE"
+	set {-game_dataHandler::CRATE_LOCATION_4} to (location at (-22.5, 52.5, -19.5) in world("plots"))
+	set {-game_dataHandler::CRATE_TYPE_4} to "EPIC_CRATE"
+	set {-game_dataHandler::CRATE_LOCATION_5} to (location at (-20.5, 52.5, -20.5) in world("plots"))
+	set {-game_dataHandler::CRATE_TYPE_5} to "LEGENDARY_CRATE"
+	set {-game_dataHandler::CRATE_LOCATION_6} to (location at (-21.5, 52.5, -37.5) in world("plots"))
+	set {-game_dataHandler::CRATE_TYPE_6} to "VOTE_CRATE"
+	set {-game_dataHandler::CRATE_LOCATION_7} to (location at (-19.5, 52.5, -35.5) in world("plots"))
+	set {-game_dataHandler::CRATE_TYPE_7} to "BOOST_CRATE"
+
+#	GENERATOR_ITEM:[LEVEL]:[AMOUNT]
+#	MACHINE_ITEM:[TYPE]:[LEVEL]:[AMOUNT]
+#	SELL_WAND_ITEM:[MULTIPLIER]:[DURABILITY]:[AMOUNT]
+#	GENERATOR_ENHANCER_ITEM:[MINIMUM_LEVEL]:[MAXIMUM_LEVEL]:[AMOUNT]
+#	CRATE_KEY_ITEM:[TYPE]:[AMOUNT]
+#	PLAYER_BOOSTER:[TYPE]:[VALUE]:[LENGTH_IN_SECONDS]
+
+	game_dataHandler_registerCratePossibleReward("COMMON_CRATE", 1, "GENERATOR_ITEM:1:1", 40)
+	game_dataHandler_registerCratePossibleReward("COMMON_CRATE", 2, "GENERATOR_ITEM:2:1", 30)
+	game_dataHandler_registerCratePossibleReward("COMMON_CRATE", 3, "GENERATOR_ITEM:3:1", 20)
+	game_dataHandler_registerCratePossibleReward("COMMON_CRATE", 4, "MACHINE_ITEM:LOOT_WORTH:1:1", 2)
+	game_dataHandler_registerCratePossibleReward("COMMON_CRATE", 5, "MACHINE_ITEM:GENERATOR_CAPACITY:1:1", 2)
+	game_dataHandler_registerCratePossibleReward("COMMON_CRATE", 6, "SELL_WAND_ITEM:1:50:1", 6)
+
+	game_dataHandler_registerCratePossibleReward("UNCOMMON_CRATE", 1, "GENERATOR_ITEM:4:1", 35)
+	game_dataHandler_registerCratePossibleReward("UNCOMMON_CRATE", 2, "GENERATOR_ITEM:5:1", 25)
+	game_dataHandler_registerCratePossibleReward("UNCOMMON_CRATE", 3, "GENERATOR_ITEM:6:1", 15)
+	game_dataHandler_registerCratePossibleReward("UNCOMMON_CRATE", 4, "MACHINE_ITEM:LOOT_WORTH:1:1", 3)
+	game_dataHandler_registerCratePossibleReward("UNCOMMON_CRATE", 5, "MACHINE_ITEM:GENERATOR_CAPACITY:1:1", 3)
+	game_dataHandler_registerCratePossibleReward("UNCOMMON_CRATE", 6, "SELL_WAND_ITEM:1.1:100:1", 4)
+	game_dataHandler_registerCratePossibleReward("UNCOMMON_CRATE", 7, "PLAYER_BOOSTER:SELL_WORTH:1.1:300", 15)
+
+	game_dataHandler_registerCratePossibleReward("RARE_CRATE", 1, "GENERATOR_ITEM:7:1", 30)
+	game_dataHandler_registerCratePossibleReward("RARE_CRATE", 2, "GENERATOR_ITEM:8:1", 25)
+	game_dataHandler_registerCratePossibleReward("RARE_CRATE", 3, "GENERATOR_ITEM:9:1", 15)
+	game_dataHandler_registerCratePossibleReward("RARE_CRATE", 4, "MACHINE_ITEM:LOOT_WORTH:2:1", 4)
+	game_dataHandler_registerCratePossibleReward("RARE_CRATE", 5, "MACHINE_ITEM:GENERATOR_CAPACITY:2:1", 4)
+	game_dataHandler_registerCratePossibleReward("RARE_CRATE", 6, "SELL_WAND_ITEM:1.2:125:1", 1.5)
+	game_dataHandler_registerCratePossibleReward("RARE_CRATE", 7, "GENERATOR_ENHANCER_ITEM:1:5:1", 0.5)
+	game_dataHandler_registerCratePossibleReward("RARE_CRATE", 8, "PLAYER_BOOSTER:SELL_WORTH:1.25:600", 10)
+	game_dataHandler_registerCratePossibleReward("RARE_CRATE", 9, "PLAYER_BOOSTER:SELL_EXPERIENCE:2:150", 10)
+
+	game_dataHandler_registerCratePossibleReward("EPIC_CRATE", 1, "GENERATOR_ITEM:10:1", 30)
+	game_dataHandler_registerCratePossibleReward("EPIC_CRATE", 2, "GENERATOR_ITEM:11:1", 20)
+	game_dataHandler_registerCratePossibleReward("EPIC_CRATE", 3, "GENERATOR_ITEM:12:1", 10)
+	game_dataHandler_registerCratePossibleReward("EPIC_CRATE", 4, "MACHINE_ITEM:LOOT_WORTH:2:1", 9)
+	game_dataHandler_registerCratePossibleReward("EPIC_CRATE", 5, "MACHINE_ITEM:GENERATOR_CAPACITY:2:1", 9)
+	game_dataHandler_registerCratePossibleReward("EPIC_CRATE", 6, "SELL_WAND_ITEM:1.3:175:1", 1.5)
+	game_dataHandler_registerCratePossibleReward("EPIC_CRATE", 7, "GENERATOR_ENHANCER_ITEM:5:10:1", 0.5)
+	game_dataHandler_registerCratePossibleReward("EPIC_CRATE", 8, "PLAYER_BOOSTER:SELL_WORTH:1.5:600", 10)
+	game_dataHandler_registerCratePossibleReward("EPIC_CRATE", 9, "PLAYER_BOOSTER:SELL_EXPERIENCE:3:150", 10)
+
+	game_dataHandler_registerCratePossibleReward("LEGENDARY_CRATE", 1, "GENERATOR_ITEM:13:1", 30)
+	game_dataHandler_registerCratePossibleReward("LEGENDARY_CRATE", 2, "GENERATOR_ITEM:14:1", 25)
+	game_dataHandler_registerCratePossibleReward("LEGENDARY_CRATE", 3, "GENERATOR_ITEM:15:1", 10)
+	game_dataHandler_registerCratePossibleReward("LEGENDARY_CRATE", 3, "GENERATOR_ITEM:20:1", 5)
+	game_dataHandler_registerCratePossibleReward("LEGENDARY_CRATE", 4, "MACHINE_ITEM:LOOT_WORTH:3:1", 4)
+	game_dataHandler_registerCratePossibleReward("LEGENDARY_CRATE", 5, "MACHINE_ITEM:GENERATOR_CAPACITY:3:1", 4)
+	game_dataHandler_registerCratePossibleReward("LEGENDARY_CRATE", 6, "SELL_WAND_ITEM:1.4:275:1", 1.5)
+	game_dataHandler_registerCratePossibleReward("LEGENDARY_CRATE", 7, "GENERATOR_ENHANCER_ITEM:10:15:1", 0.5)
+	game_dataHandler_registerCratePossibleReward("LEGENDARY_CRATE", 8, "PLAYER_BOOSTER:SELL_WORTH:2:600", 10)
+	game_dataHandler_registerCratePossibleReward("LEGENDARY_CRATE", 9, "PLAYER_BOOSTER:SELL_EXPERIENCE:4:300", 10)
+
+	game_dataHandler_registerCratePossibleReward("BUTTON_CRATE", 1, "CRATE_KEY_ITEM:COMMON_CRATE:1", 50)
+	game_dataHandler_registerCratePossibleReward("BUTTON_CRATE", 2, "CRATE_KEY_ITEM:UNCOMMON_CRATE:1", 30)
+	game_dataHandler_registerCratePossibleReward("BUTTON_CRATE", 3, "CRATE_KEY_ITEM:RARE_CRATE:1", 15)
+	game_dataHandler_registerCratePossibleReward("BUTTON_CRATE", 4, "CRATE_KEY_ITEM:EPIC_CRATE:1", 4.75)
+	game_dataHandler_registerCratePossibleReward("BUTTON_CRATE", 5, "CRATE_KEY_ITEM:LEGENDARY_CRATE:1", 0.25)
+
+	game_dataHandler_registerCratePossibleReward("VOTE_CRATE", 1, "GENERATOR_ITEM:1:1", 25)
+	game_dataHandler_registerCratePossibleReward("VOTE_CRATE", 2, "GENERATOR_ITEM:2:1", 25)
+	game_dataHandler_registerCratePossibleReward("VOTE_CRATE", 3, "GENERATOR_ITEM:3:1", 25)
+	game_dataHandler_registerCratePossibleReward("VOTE_CRATE", 4, "PLAYER_BOOSTER:SELL_EXPERIENCE:2:60", 10)
+	game_dataHandler_registerCratePossibleReward("VOTE_CRATE", 5, "PLAYER_BOOSTER:SELL_WORTH:2:60", 10)
+	game_dataHandler_registerCratePossibleReward("VOTE_CRATE", 6, "SELL_WAND_ITEM:1.3:50:1", 5)
+
+	game_dataHandler_registerCratePossibleReward("BOOST_CRATE", 1, "PLAYER_BOOSTER:SELL_EXPERIENCE:3:300", 45)
+	game_dataHandler_registerCratePossibleReward("BOOST_CRATE", 2, "PLAYER_BOOSTER:SELL_WORTH:3:300", 45)
+	game_dataHandler_registerCratePossibleReward("BOOST_CRATE", 3, "SELL_WAND_ITEM:1.5:10:1", 8)
+	game_dataHandler_registerCratePossibleReward("BOOST_CRATE", 4, "GENERATOR_ENHANCER_ITEM:1:20:1", 1)
+	game_dataHandler_registerCratePossibleReward("BOOST_CRATE", 5, "GROUP_COLOR_MODIFIER:GREEN:1", 1)
+
+	game_threadHandler_updateThread({_loadThread}, "LOADED")
+
+function game_dataHandler_updateLevelRewardData(loadThread: text):
+
+	loop 8 times:
+	
+		set {_baseLevel} to ((loop-number - 1) * 10)
+		
+		set {_crateKeyIndex} to ceil(loop-number / 2)
+		set {_crateKeyTypes::*} to "COMMON_CRATE" and "UNCOMMON_CRATE" and "RARE_CRATE" and "EPIC_CRATE"
+		set {_crateKeySelectedType} to {_crateKeyTypes::%{_crateKeyIndex}%}
+		
+		set {_generatorLevel} to loop-number
+		set {_sellwandDurability} to (5 + (loop-number * 5))
+		
+		set {_sellWorthBoosterMultiplier} to (1 + (ceil(loop-number / 2) * 0.25))
+		set {_sellExperienceBoosterMultiplier} to (1 + ceil(loop-number / 2))
+		
+		game_dataHandler_registerLevelReward(({_baseLevel} + 1), "PLAYER_BOOSTER:SELL_WORTH:%{_sellWorthBoosterMultiplier}%:60")
+		game_dataHandler_registerLevelReward(({_baseLevel} + 2), "CRATE_KEY_ITEM:%{_crateKeySelectedType}%:1")
+		game_dataHandler_registerLevelReward(({_baseLevel} + 3), "GENERATOR_ITEM:%{_generatorLevel}%:1")
+		game_dataHandler_registerLevelReward(({_baseLevel} + 4), "CRATE_KEY_ITEM:%{_crateKeySelectedType}%:1")
+		game_dataHandler_registerLevelReward(({_baseLevel} + 5), "SELL_WAND_ITEM:1:%{_sellwandDurability}%:1")
+		game_dataHandler_registerLevelReward(({_baseLevel} + 6), "PLAYER_BOOSTER:SELL_EXPERIENCE:%{_sellExperienceBoosterMultiplier}%:30")
+		game_dataHandler_registerLevelReward(({_baseLevel} + 7), "CRATE_KEY_ITEM:%{_crateKeySelectedType}%:1")
+		game_dataHandler_registerLevelReward(({_baseLevel} + 8), "GENERATOR_ITEM:%{_generatorLevel}%:1")
+		game_dataHandler_registerLevelReward(({_baseLevel} + 9), "CRATE_KEY_ITEM:%{_crateKeySelectedType}%:1")
+		game_dataHandler_registerLevelReward(({_baseLevel} + 10), "GENERATOR_ENHANCER_ITEM:1:5:1")
+
+		wait 2 ticks
+
+	game_threadHandler_updateThread({_loadThread}, "LOADED")
+
+function game_dataHandler_resetHolograms():
+	delete all holograms
+	wait 3 ticks
+	game_leaderboardHandler_newLeaderboard("BALANCE_LEADERBOARD", (location at (-34.5, 56, -22.5) in world("plots")))
+	wait 3 ticks
+	game_playersHandler_updateTopBalanceList_leaderboardDisplay()
+
+on script load:
+	wait 3 ticks
+	game_dataHandler_updateAllData()
+
+function game_dataHandler_updateAllData():
+	game_threadHandler_updateThread("DATAHANDLER_DATA_LOAD_MAIN", "NOT_LOADED")
+	delete {-game_dataHandler::*}
+	loop 5 times:
+		game_threadHandler_updateThread("DATAHANDLER_DATA_LOAD_%loop-number%", "NOT_LOADED")
+
+		if loop-number is 1:
+			game_dataHandler_updateGeneralData("DATAHANDLER_DATA_LOAD_%loop-number%")
+		else if loop-number is 2:
+			game_dataHandler_updateGeneratorsData("DATAHANDLER_DATA_LOAD_%loop-number%")
+		else if loop-number is 3:
+			game_dataHandler_updateShopData("DATAHANDLER_DATA_LOAD_%loop-number%")
+		else if loop-number is 4:
+			game_dataHandler_updateCrateData("DATAHANDLER_DATA_LOAD_%loop-number%")
+		else:
+			game_dataHandler_updateLevelRewardData("DATAHANDLER_DATA_LOAD_%loop-number%")
+
+		while (game_threadHandler_checkThread("DATAHANDLER_DATA_LOAD_%loop-number%") is not "LOADED"):
+			wait 3 ticks
+		send "&a[System] In-game data ##%loop-number% loaded!" to all players
+	game_threadHandler_updateThread("DATAHANDLER_DATA_LOAD_MAIN", "LOADED")
+	game_generatorsHandler_updateAllActiveGenerators()
+	send "&a[System] All in-game data successfully loaded!" to all players
+
+function game_dataHandler_registerGeneratorData(generatorLevel: number, generatorUpgradeCost: number, generatorLootWorth: number):
+	set {-game_dataHandler::GENERATOR_UPGRADE_COST_%{_generatorLevel}%} to {_generatorUpgradeCost}
+	set {-game_dataHandler::GENERATOR_LOOT_WORTH_%{_generatorLevel}%} to {_generatorLootWorth}
+
+function game_dataHandler_registerGeneratorDisplay(generatorLevel: number, generatorName: text, generatorBlock: item, generatorDrop: item):
+	set {-game_dataHandler::GENERATOR_NAME_%{_generatorLevel}%} to {_generatorName}
+	set {-game_dataHandler::GENERATOR_BLOCK_%{_generatorLevel}%} to {_generatorBlock}
+	set {-game_dataHandler::GENERATOR_LOOT_MATERIAL_%{_generatorLevel}%} to {_generatorDrop}
+	set {-game_dataHandler::GENERATOR_LOOT_%{_generatorLevel}%} to game_dataHandler_registerGeneratorDisplay_getGeneratorLoot({_generatorLevel})
+
+function game_dataHandler_registerGeneratorDisplay_getGeneratorLoot(generatorLevel: number, lootWorthMultiplier: number = 1) :: item:
+	set {_lootWorthMultiplierDisplay} to (check [{_lootWorthMultiplier} is not 1] ? "||&f||&7&oWorth Multiplier: %{_lootWorthMultiplier}%x" : "")
+	return ({-game_dataHandler::GENERATOR_LOOT_MATERIAL_%{_generatorLevel}%} with lore "&f||&eType: &fLoot||&eWorth: &f%ceil({-game_dataHandler::GENERATOR_LOOT_WORTH_%{_generatorLevel}%} * {_lootWorthMultiplier})%%{_lootWorthMultiplierDisplay}%")
+
+function game_dataHandler_registerMachineData(machineType: text, machineLevel: number, machineStatsText: text):
+	set {_machineStats::*} to {_machineStatsText} split by ","
+	loop {_machineStats::*}:
+		set {_loopMachineStatSplit::*} to loop-value split by ":"
+		set {-game_dataHandler::MACHINE_%{_machineType}%_%{_machineLevel}%_STATS::%{_loopMachineStatSplit::1}%} to ({_loopMachineStatSplit::2} parsed as number)
+
+function game_dataHandler_registerMachineDisplay(machineType: text, machineLevel: number, machineBlock: item):
+	set {-game_dataHandler::MACHINE_BLOCK_%{_machineType}%_%{_machineLevel}%} to {_machineBlock}
+
+function game_dataHandler_registerShopData(shopItemCategory: text, shopItemIndex: number, shopItem: item, shopItemPriceCurrency: text, shopItemPrice: number, shopItemDefaultName: text):
+	set {-game_dataHandler::ITEM_SHOP_CATEGORY_ITEM_AMOUNT_%{_shopItemCategory}%} to (check [{-game_dataHandler::ITEM_SHOP_CATEGORY_ITEM_AMOUNT_%{_shopItemCategory}%} > {_shopItemIndex}] ? {-game_dataHandler::ITEM_SHOP_CATEGORY_ITEM_AMOUNT_%{_shopItemCategory}%} : {_shopItemIndex})
+	set {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_ITEM_%{_shopItemCategory}%_%{_shopItemIndex}%} to {_shopItem}
+	set {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_PRICE_CURRENCY_%{_shopItemCategory}%_%{_shopItemIndex}%} to {_shopItemPriceCurrency}
+	set {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_PRICE_%{_shopItemCategory}%_%{_shopItemIndex}%} to {_shopItemPrice}
+	set {-game_dataHandler::ITEM_SHOP_ITEM_ON_SELL_NAME_%{_shopItemCategory}%_%{_shopItemIndex}%} to {_shopItemDefaultName}
+	set {_shopItemId} to (id of type of {_shopItem})
+	set {-game_dataHandler::CRAFTING_BLACKLISTED_ITEM_ID_%{_shopItemId}%} to true
+
+function game_dataHandler_registerRankData(groupId: text, groupPriority: number, groupPrefixColor: text, groupPrefixText: text, upgradableLevel: number = -1):
+	set {-game_dataHandler::RANK_PRIORITY_%{_groupId}%} to {_groupPriority}
+	set {-game_dataHandler::RANK_PREFIX_COLOR_%{_groupId}%} to {_groupPrefixColor}
+	set {-game_dataHandler::RANK_PREFIX_TEXT_%{_groupId}%} to {_groupPrefixText}
+	if {_upgradableLevel} >= 0:
+		set {-game_dataHandler::UPGRADABLE_RANK_ID_%{_upgradableLevel}%} to {_groupId}
+
+function game_dataHandler_registerUpgradableRankPermission(permission: text, groups: texts, groupPermissionValues: objects):
+	loop {_groups::*}:
+		set {-game_dataHandler::RANK_PERMISSION_%loop-value%::PERMISSION_%{_permission}%} to {_groupPermissionValues::%loop-index%}
+
+function game_dataHandler_registerRankData_upgradableRank_upgradePrice(upgradableLevel: number, upgradeCost: number):
+	set {-game_dataHandler::UPGRADABLE_RANK_UPGRADE_COST_%{_upgradableLevel}%} to {_upgradeCost}
+
+function game_dataHandler_registerCratePossibleReward(crateId: text, index: number, itemId: text, chance: number):
+#	set {_totalChance} to (check [{-game_dataHandler::CRATE_REWARD_TOTAL_CHANCE_%{_crateId}%} is set] ? {-game_dataHandler::CRATE_REWARD_TOTAL_CHANCE_%{_crateId}%} : 0)
+#
+#	Used the method below instead of the one above due to skript bug
+#
+	set {_totalChance} to {-game_dataHandler::CRATE_REWARD_TOTAL_CHANCE_%{_crateId}%}
+	if {_totalChance} is not set:
+		set {_totalChance} to 0
+	add {_chance} to {_totalChance}
+	set {-game_dataHandler::CRATE_REWARD_TOTAL_CHANCE_%{_crateId}%} to {_totalChance}
+	set {-game_dataHandler::CRATE_REWARD_ITEM_%{_crateId}%::%{_totalChance}%} to {_itemId}
+
+function game_dataHandler_getTotalExperienceNeededForLevel(targetLevel: number) :: number:
+	if {-game_dataHandler::TOTAL_EXPERIENCE_NEEDED_FOR_LEVEL::%{_targetLevel}%} is not set:
+		set {-game_dataHandler::TOTAL_EXPERIENCE_NEEDED_FOR_LEVEL::0} to 0
+		set {_lastCaculatedLevel} to ((amount of {-game_dataHandler::TOTAL_EXPERIENCE_NEEDED_FOR_LEVEL::*}) - 1)
+		loop ({_targetLevel} - {_lastCaculatedLevel}) times:
+			set {_loopLevel} to ({_lastCaculatedLevel} + loop-number)
+			set {_previousLevel} to ({_loopLevel} - 1)
+#			send "SET %{_loopLevel}% TO %{-game_dataHandler::TOTAL_EXPERIENCE_NEEDED_FOR_LEVEL::%{_previousLevel}%}% + %{@level_needed_experience}% (LAST_CAC: %{_lastCaculatedLevel}%)" to all players
+			set {-game_dataHandler::TOTAL_EXPERIENCE_NEEDED_FOR_LEVEL::%{_loopLevel}%} to ({-game_dataHandler::TOTAL_EXPERIENCE_NEEDED_FOR_LEVEL::%{_previousLevel}%} + {@level_needed_experience})
+	return {-game_dataHandler::TOTAL_EXPERIENCE_NEEDED_FOR_LEVEL::%{_targetLevel}%}
+
+function game_dataHandler_registerLevelReward(level: number, reward: text):
+	set {-game_dataHandler::PLAYER_LEVEL_REWARD_%{_level}%} to {_reward}
+
+function game_dataHandler_registerAnnouncement(index: number, message: text):
+	set {-game_dataHandler::SERVER_ANNOUNCEMENT_%{_index}%} to {_message}
+	if {_index} <= {-game_dataHandler::SERVER_ANNOUNCEMENT_TOTAL}:
+		stop
+	set {-game_dataHandler::SERVER_ANNOUNCEMENT_TOTAL} to {_index}

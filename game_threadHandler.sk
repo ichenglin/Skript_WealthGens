@@ -1,0 +1,5 @@
+function game_threadHandler_updateThread(id: text, threadStatus: text):
+	set {-game_threadHandler::%{_id}%_STATUS} to {_threadStatus}
+
+function game_threadHandler_checkThread(id: text) :: text:
+	return {-game_threadHandler::%{_id}%_STATUS}
