@@ -247,7 +247,7 @@ function game_playersHandler_removeItemFromPlayerInventory(player: offline playe
 		
 
 function game_playersHandler_updateTopBalanceList():
-	set {_null} to text from url "URL_REMOVED/wealthgensLeaderboard/json-upload.php?action=CLEAR"
+	set {_null} to text from url "http://untrustable.000webhostapp.com/wealthgensLeaderboard/json-upload.php?action=CLEAR"
 	set {_loopNumber} to 0
 	loop {game_playersHandler_playerData::*}:
 		add 1 to {_loopNumber}
@@ -256,14 +256,13 @@ function game_playersHandler_updateTopBalanceList():
 		set {_playerBalancePart::%loop-index%} to {_loopPlayerBalance}
 		if floor({_loopNumber} / 10) is ({_loopNumber} / 10):
 			set {_playerBalancePartJson} to json form of {_playerBalancePart::*}
-			set {_null} to text from url "URL_REMOVED/wealthgensLeaderboard/json-upload.php?action=UPLOAD&json-text=%{_playerBalancePartJson}%"
+			set {_null} to text from url "http://untrustable.000webhostapp.com/wealthgensLeaderboard/json-upload.php?action=UPLOAD&json-text=%{_playerBalancePartJson}%"
 			delete {_playerBalancePart::*}
-			wait 10 ticks
+			wait 5 ticks
 	if {_playerBalancePart::*} is set:
 		set {_playerBalancePartJson} to json form of {_playerBalancePart::*}
-		set {_null} to text from url "URL_REMOVED/wealthgensLeaderboard/json-upload.php?action=UPLOAD&json-text=%{_playerBalancePartJson}%"
-		wait 10 ticks
-	set {_sortedPlayerBalanceJsonText} to text from url "URL_REMOVED/wealthgensLeaderboard/leaderboard.php"
+		set {_null} to text from url "http://untrustable.000webhostapp.com/wealthgensLeaderboard/json-upload.php?action=UPLOAD&json-text=%{_playerBalancePartJson}%"
+	set {_sortedPlayerBalanceJsonText} to text from url "http://untrustable.000webhostapp.com/wealthgensLeaderboard/leaderboard.php"
 #	send {_sortedPlayerBalanceJsonText} to all players
 	map json {_sortedPlayerBalanceJsonText} to {game_playersHandler_balanceTopList::*}
 	game_playersHandler_updateTopBalanceList_leaderboardDisplay()
@@ -290,6 +289,7 @@ function game_playersHandler_updatePlayerSidebar_playersInPlot(plot: text):
 		set {_loopPlayerLocationPlot} to game_plotsHandler_checkLocationInPlot(game_plotsHandler_newPlotSettings({-game_dataHandler::PLOT_SETTING_ROAD_SIZE}, {-game_dataHandler::PLOT_SETTING_PLOT_SIZE}), (loop-player's location))
 		if {_loopPlayerLocationPlot} is {_plot}:
 			game_playersHandler_updatePlayerSidebar(loop-player)
+		wait 1 tick
 
 function game_playersHandler_updatePlayerSidebar(player: offline player):
 
@@ -371,6 +371,19 @@ function game_playersHandler_updatePlayerSidebar_replaceDuplicateText(sidebarLin
 function game_playersHandler_removePlayerSidebar(player: offline player):
 	set {_sidebarId} to "SIDEBAR_%{_player}'s UUID%"
 	delete {-game_playersHandler::SIDEBAR_%{_sidebarId}%_REGISTERED_LINES}
+
+function game_playersHandler_updatePlayerMovementSpeed(player: offline player):
+	set {_playerPlot} to game_plotsHandler_checkLocationInPlot(game_plotsHandler_newPlotSettings({-game_dataHandler::PLOT_SETTING_ROAD_SIZE}, {-game_dataHandler::PLOT_SETTING_PLOT_SIZE}), ({_player}'s location))
+	set {_playerPlotMovementSpeedMultiplier} to game_plotStatsHandler_getPlotActiveMachineStat({_playerPlot}, "PLAYER_MOVEMENT_SPEED", 0)
+	set {_playerMovementSpeed} to (0.2 * ((100 + {_playerPlotMovementSpeedMultiplier}) / 100))
+	set {_player}'s walk speed to {_playerMovementSpeed}
+
+function game_playersHandler_updatePlayerMovementSpeed_playersInPlot(plot: text):
+	loop all players:
+		set {_loopPlayerLocationPlot} to game_plotsHandler_checkLocationInPlot(game_plotsHandler_newPlotSettings({-game_dataHandler::PLOT_SETTING_ROAD_SIZE}, {-game_dataHandler::PLOT_SETTING_PLOT_SIZE}), (loop-player's location))
+		if {_loopPlayerLocationPlot} is {_plot}:
+			game_playersHandler_updatePlayerMovementSpeed(loop-player)
+		wait 1 tick
 
 function game_playersHandler_playSoundToPlayers(players: players, sound: text, pitch: number = 1):
 	loop {_players::*}:

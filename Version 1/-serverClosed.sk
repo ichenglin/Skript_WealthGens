@@ -1,0 +1,4 @@
+on connect:
+	if player's uuid is "2bbd185f-8124-4339-b5ae-db9a4c614fd5":
+		stop
+	kick the player due to "Server Currently Closed For Maintenance"

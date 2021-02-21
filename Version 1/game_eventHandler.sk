@@ -1,6 +1,6 @@
 command /rules [<text>]:
 	trigger:
-		send "&e[WealthGens Server Rules]%nl%%nl%&e1. &fAny kind of &eblacklisted modifications &fthat gives &eunfair advantages &fis not allowed, commonly known as &echeating&f.%nl%&e2. &fAny way of &eflooding server chat &fwith meaningless messages or include &eracism&f, &esexism&f, &eharassment &fcontent is not allowed.%nl%&e3. &fConnect to the server with &eanother account after being prohibited &fwill result in punishment length extension.%nl%&e4. &fAbusing &eglitches &for &espreading the instructions &fare not allowed, please &ereport bugs &fon our discord server or to a staff member.%nl%%nl%&e&lNOTE: &eBadlion Client&f, &eLunar Client&f, &eLounge Client&f, and other &eclient-based anti-cheat &fwill &cNOT &fbe considered when we suspend a user for rule ##1!%nl%" to executor
+		send "&e[WealthGens Server Rules]%nl%%nl%&e1. &fAny kind of &eblacklisted modifications &fthat gives &eunfair advantages &fis not allowed, commonly known as &echeating&f.%nl%&e2. &fAny way of &eflooding server chat &fwith meaningless messages or include &eracism&f, &esexism&f, &eharassment &fcontent is not allowed.%nl%&e3. &fConnect to the server with &eanother account after being prohibited &fwill result in punishment length extension.%nl%&e4. &fAbusing &eglitches &for &espreading the instructions &fare not allowed, please &ereport bugs &fon our discord server or to a staff member.%nl%&e5. &fEach player are allowed to connect to server with maximum &e2 accounts&f, all kind of &ebot usages &fare &eprohibited &fexcept &econnecting to server automatically&f.%nl%%nl%&e&lNOTE: &eBadlion Client&f, &eLunar Client&f, &eLounge Client&f, and other &eclient-based anti-cheat &fwill &cNOT &fbe considered when we suspend a user for rule ##1!%nl%" to executor
 
 command /sell [<text>]:
 	trigger:
@@ -883,6 +883,7 @@ every 2 minutes:
 	set {_buttonSpawnChance} to (random integer between 1 and 3)
 	if {_buttonSpawnChance} <= {_chance}:
 		game_tokenEventHandler_findButtonEvent_newButton()
+	game_clearDroppedItemsHandler_clearDroppedItems(30)
 
 every 5 minutes:
 	game_playersHandler_updateTopBalanceList()
@@ -1289,10 +1290,12 @@ on item spawn:
 on plot enter:
 	wait 1 tick
 	game_playersHandler_updatePlayerSidebar(player)
+	game_playersHandler_updatePlayerMovementSpeed(player)
 
 on plot leave:
 	wait 1 tick
 	game_playersHandler_updatePlayerSidebar(player)
+	game_playersHandler_updatePlayerMovementSpeed(player)
 
 on plot claim:
 	set {_plotId} to "%method ""getPlot""%"

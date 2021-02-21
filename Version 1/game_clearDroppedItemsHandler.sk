@@ -1,0 +1,8 @@
+function game_clearDroppedItemsHandler_clearDroppedItems(countdownSeconds: number):
+	loop {_countdownSeconds} times:
+		set {_remainSeconds} to ({_countdownSeconds} - loop-number + 1)
+		if {_remainSeconds} is 30 or 20 or 10 or 5:
+			send  "&a[Server] All dropped items are being cleared in &f%{_remainSeconds}% &aseconds." to all players
+		wait 1 second
+	send  "&a[Server] All dropped items have been cleared." to all players
+	kill all dropped items

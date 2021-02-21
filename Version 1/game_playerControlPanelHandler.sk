@@ -210,6 +210,7 @@ function game_playerControlPanelHandler_panelGUI_editMachine_playerRemoveMachine
 	send "&eYou have removed a &f%{_machineName}% Machine&e! &e(&fLevel %{_machineData::2}%&e)" to {_controlPanelViewer}
 	send title "&c&lRemoved Machine" with subtitle "&eYou have removed a &f&l%{_machineName}% Machine" to {_controlPanelViewer} for 2 seconds with 0 tick fadein and 0 tick fadeout
 	game_playersHandler_updatePlayerSidebar_playersInPlot({_machineData::4})
+	game_playersHandler_updatePlayerMovementSpeed_playersInPlot({_generatorData::4})
 
 function game_playerControlPanelHandler_guiBasic(controlPanelViewer: offline player, controlPanelTarget: offline player):
 	set {_controlPanelTargetDisplay} to (check [{_controlPanelViewer} is not {_controlPanelTarget}] ? " (%{_controlPanelTarget}%)" : "")

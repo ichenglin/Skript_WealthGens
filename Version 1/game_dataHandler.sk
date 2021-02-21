@@ -44,7 +44,7 @@ function game_dataHandler_updateGeneralData(loadThread: text):
 	set {-game_dataHandler::GROUP_DEFAULT_MAXIMUM_CHARACTERS_IN_NAME} to 8
 	set {-game_dataHandler::GROUP_DEFAULT_MAXIMUM_PLAYER_AMOUNT} to 8
 
-	set {-game_dataHandler::MACHINE_STAT_TYPES} to "LOOT_WORTH_MULTIPLIER,GENERATOR_CAPACITY,MACHINE_CAPACITY"
+	set {-game_dataHandler::MACHINE_STAT_TYPES} to "LOOT_WORTH_MULTIPLIER,GENERATOR_CAPACITY,MACHINE_CAPACITY,PLAYER_MOVEMENT_SPEED"
 
 	wait 5 ticks
 
@@ -62,7 +62,7 @@ function game_dataHandler_updateGeneralData(loadThread: text):
 	game_dataHandler_registerMachineDisplay("GENERATOR_CAPACITY", 2, COMMAND_BLOCK)
 	game_dataHandler_registerMachineDisplay("GENERATOR_CAPACITY", 3, COMMAND_BLOCK)
 
-	game_dataHandler_registerMachineData("BEACON", 1, "")
+	game_dataHandler_registerMachineData("BEACON", 1, "PLAYER_MOVEMENT_SPEED:50")
 	game_dataHandler_registerMachineDisplay("BEACON", 1, BEACON)
 
 	game_dataHandler_registerMachineData("DEVELOPMENT", 1, "GENERATOR_CAPACITY:990,MACHINE_CAPACITY:998")
@@ -224,9 +224,14 @@ function game_dataHandler_updateShopData(loadThread: text):
 	game_dataHandler_registerShopData("BLOCKS", 24, game_displayHandler_rawItemTypeLabel(16 of SANDSTONE), "BALANCE", (25 * (10^3)), "")
 	game_dataHandler_registerShopData("BLOCKS", 25, game_displayHandler_rawItemTypeLabel(16 of SMOOTH_SANDSTONE), "BALANCE", (50 * (10^3)), "")
 	game_dataHandler_registerShopData("BLOCKS", 26, game_displayHandler_rawItemTypeLabel(16 of CHISELED_SANDSTONE), "BALANCE", (150 * (10^3)), "")
-	game_dataHandler_registerShopData("BLOCKS", 27, game_displayHandler_rawItemTypeLabel(16 of QUARTZ_BLOCK), "TOKEN", (2 * (10^0)), "")
-	game_dataHandler_registerShopData("BLOCKS", 28, game_displayHandler_rawItemTypeLabel(16 of CHISELLED_QUARTZ_BLOCK), "TOKEN", (4 * (10^0)), "")
-	game_dataHandler_registerShopData("BLOCKS", 29, game_displayHandler_rawItemTypeLabel(16 of QUARTZ_BLOCK:2), "TOKEN", (6 * (10^0)), "")
+	loop 4 times:
+		set {_shopItemIndex} to (26 + loop-number)
+		set {_shopItem} to 18:0
+		set {_shopItem}'s durability to (loop-number - 1)
+		game_dataHandler_registerShopData("BLOCKS", {_shopItemIndex}, game_displayHandler_rawItemTypeLabel(16 of {_shopItem}), "BALANCE", (10 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 31, game_displayHandler_rawItemTypeLabel(16 of QUARTZ_BLOCK), "TOKEN", (2 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 32, game_displayHandler_rawItemTypeLabel(16 of CHISELLED_QUARTZ_BLOCK), "TOKEN", (4 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 33, game_displayHandler_rawItemTypeLabel(16 of QUARTZ_BLOCK:2), "TOKEN", (6 * (10^0)), "")
 	game_dataHandler_registerShopData("MISCELLANEOUS", 1, game_displayHandler_rawItemTypeLabel(1 of WATER_BUCKET), "BALANCE", (100 * (10^0)), "")
 	game_dataHandler_registerShopData("MISCELLANEOUS", 2, game_displayHandler_rawItemTypeLabel(1 of HOPPER), "BALANCE", (50 * (10^3)), "")
 #	game_dataHandler_registerShopData("MISCELLANEOUS", 3, game_displayHandler_rawItemTypeLabel(8 of SIGN_ITEM), "BALANCE", (1 * (10^3)), "")
