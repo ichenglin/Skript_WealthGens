@@ -8,7 +8,7 @@ function game_auctionHandler_playerStartAuction(player: offline player, item: it
 	set {-game_auctionHandler::AUCTION_COUNT_DOWN} to ({_bidStartingCountdown} + 1)
 	set {-game_auctionHandler::AUCTION_ANTI_SNIPE_EXTEND_COUNT_DOWN_TIMES} to 0
 	set {_itemHoverDisplay} to "%{_item}'s name%%nl%%{_item}'s lore%"
-	replace all "||" with "%nl%" in {_itemHoverDisplay}
+	replace all "||" with (nl) in {_itemHoverDisplay}
 	set {_auctionStartItemDisplay} to "<tooltip:%{_itemHoverDisplay}%>&f%item amount of {_item}%x %uncolored {_item}'s name% &7&o(Hover For Details)<reset>"
 	set {_auctionEndDisplay} to "<tooltip:%{_itemHoverDisplay}%>&f[%item amount of {_item}%x %uncolored {_item}'s name%]<reset>"
 	send "&b&m+-------&b [Player Auction] &b&m-------+%nl%&bSeller: &f%game_playersHandler_getPlayerDisplayName({_player})%%nl%&bItem: %{_auctionStartItemDisplay}%%nl%&bStarting Bid: &f$%game_displayHandler_getNumberDigitDisplay({_startingBid})%%nl%&bBid Minimum Increasement: &f$%game_displayHandler_getNumberDigitDisplay({_bidMinimumIncreasement})%%nl%%nl%&bUse &f/auction bid [amount] &bto bid.%nl%%nl%&b&m+-------&b [Player Auction] &b&m-------+" to all players
@@ -19,7 +19,7 @@ function game_auctionHandler_playerStartAuction(player: offline player, item: it
 		set {_timeRemaining} to {-game_auctionHandler::AUCTION_COUNT_DOWN}
 		if {_timeRemaining} is 120 or 90 or 60 or 30 or 15 or 5 or 3 or 2 or 1:
 			if {_timeRemaining} is not {_bidStartingCountdown}:
-				send "&b[Auction] The bid is ending in &f%{_timeRemaining}% &bseconds!" to all players
+				send "&b[Auction] The auction is ending in &f%{_timeRemaining}% &bseconds!" to all players
 		wait 1 second
 	if {-game_auctionHandler::LAST_BID_PLAYER} is not set:
 		give {_item} to {-game_auctionHandler::AUCTION_SELLER}
@@ -65,6 +65,11 @@ function game_auctionHandler_returnAuctionMoney(auctionWinnerUUID: text):
 		if {_loopPlayerUUID} is not {_auctionWinnerUUID}:
 			game_playersHandler_setPlayerBalance({_loopPlayer}, (game_playersHandler_getPlayerBalance({_loopPlayer}) + loop-value), true)
 	delete {-game_auctionHandler::PLAYER_BID_AMOUNT::*}
+
+function game_auctionHandler_getPlayerLastBidAmount(playerUUID: text) :: number:
+	if {-game_auctionHandler::PLAYER_BID_AMOUNT::%{_playerUUID}%} is set:
+		return {-game_auctionHandler::PLAYER_BID_AMOUNT::%{_playerUUID}%}
+	return 0
 
 function game_auctionHandler_getMinimumBidAmount() :: number:
 	if {-game_auctionHandler::LAST_BID_PLAYER} is not set:

@@ -16,6 +16,14 @@ function game_playerLogHandler_newLog(playerUUID: text, logType: text, logValue:
 	if {_deleteLogIndex} > 0:
 		delete {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG::%{_deleteLogIndex}%}
 
+function game_playerLogHandler_wipeLog(playerUUID: text, logType: text):
+	delete {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG_INDEX_TOTAL}
+
+function game_playerLogHandler_getPlayerLogLength(playerUUID: text, logType: text) :: number:
+	if {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG_INDEX_TOTAL} is not set:
+		return 0
+	return {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG_INDEX_TOTAL}
+
 function game_playerLogHandler_getPlayerLatestLog(playerUUID: text, logType: text, previousLogs: number = 20) :: texts:
 
 	if {-game_playerLogHandler::%{_playerUUID}%_%{_logType}%_LOG_INDEX_TOTAL} is set:

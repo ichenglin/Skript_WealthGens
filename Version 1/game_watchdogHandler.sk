@@ -1,3 +1,29 @@
+function game_watchdogHandler_checkOnlinePlayers():
+	loop all players:
+		set {_loopPlayer} to loop-player
+		set {_loopPlayerUUID} to (loop-player's UUID)
+		if game_playerLogHandler_getPlayerLogLength({_loopPlayerUUID}, "CHAT") <= 4:
+			set {_watchdogPlayerCheck::SPAM} to false
+		else if system_punishmentSystem_checkPunished({_loopPlayer}, "MUTE") is true:
+			set {_watchdogPlayerCheck::SPAM} to false
+		else if {-game_eventHandler::PLAYER_MESSAGES_COUNT::%{_loopPlayerUUID}%} >= 4:
+			set {_watchdogPlayerCheck::SPAM} to true
+		else if {-game_eventHandler::WATCHDOG_PLAYER_REPORTED::%{_loopPlayerUUID}%} >= 1:
+			set {_watchdogPlayerCheck::SPAM} to true
+		if {_watchdogPlayerCheck::SPAM} is true:
+			set {_watchdogPlayerSpamDetection} to game_watchdogHandler_playerSpamFlag({_loopPlayerUUID})
+			if {_watchdogPlayerSpamDetection} is true:
+				system_punishmentSystem_registerPunishment({_loopPlayer}, "CONSOLE", "MUTE", "%system_punishmentSystem_textToSeconds(""1H"")%", "WealthGens WatchDog Detection (Spam)")
+				send "%nl%&a[WatchDog] Player &f%game_playersHandler_getPlayerDisplayName({_loopPlayer})%&a has been muted for spamming.%nl%" to all players
+				send "%nl%&a[WatchDog] Our system has recently detected you to be violating community guidelines, if you believe this is in error please contact an administrator.%nl%&a[WatchDog] Support ID: ##%game_groupsHandler_system_getRandomConfirmationCode(6)%%nl%" to {_loopPlayer}
+				game_playerLogHandler_wipeLog({_loopPlayerUUID}, "CHAT")
+				wait 4 ticks
+			delete {_watchdogPlayerCheck::*}
+			delete {_watchdogPlayerSpamDetection}
+		wait 1 tick
+	delete {-game_eventHandler::PLAYER_MESSAGES_COUNT::*}
+	delete {-game_eventHandler::WATCHDOG_PLAYER_REPORTED::*}
+
 function game_watchdogHandler_playerSpamFlag(playerUUID: text) :: boolean:
 
 	set {_player} to ({_playerUUID} parsed as offline player)
@@ -10,13 +36,9 @@ function game_watchdogHandler_playerSpamFlag(playerUUID: text) :: boolean:
 	set {_playerMessageListTextRaw} to join {_playerPreviousChatLog::*} with delimiter ""","""
 	replace " " with "%%20" in {_playerMessageListTextRaw}
 
-	set {_playerPreviousChatLogSimilarityJson} to text from url "http://untrustable.000webhostapp.com/textSimilarity.php?texts={""player"":""%{_playerUUID}%"",""texts"":[""%{_playerMessageListTextRaw}%""]}"
+	set {_playerPreviousChatLogSimilarityJson} to text from url "http://untrustable.000webhostapp.com/watchdog/textSimilarity.php?texts={""player"":""%{_playerUUID}%"",""texts"":[""%{_playerMessageListTextRaw}%""]}"
 	map json {_playerPreviousChatLogSimilarityJson} to {_playerPreviousChatLogSimilarityReport::*}
 
 	send "&7&o[Watchdog Report] %{_player}% (TS: %{_playerPreviousChatLogSimilarityReport::text-similarity}%%%, SS: %{_playerPreviousChatLogSimilarityReport::structure-similarity}%%%)" to all players where [player input is a op]
 
-	if {_playerPreviousChatLogSimilarityReport::text-similarity} >= 40:
-		return true
-	else if {_playerPreviousChatLogSimilarityReport::structure-similarity} >= 80:
-		return true
-	return false
+	return {_playerPreviousChatLogSimilarityReport::spam-detected}

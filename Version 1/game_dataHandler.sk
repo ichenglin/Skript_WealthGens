@@ -229,9 +229,14 @@ function game_dataHandler_updateShopData(loadThread: text):
 		set {_shopItem} to 18:0
 		set {_shopItem}'s durability to (loop-number - 1)
 		game_dataHandler_registerShopData("BLOCKS", {_shopItemIndex}, game_displayHandler_rawItemTypeLabel(16 of {_shopItem}), "BALANCE", (10 * (10^3)), "")
-	game_dataHandler_registerShopData("BLOCKS", 31, game_displayHandler_rawItemTypeLabel(16 of QUARTZ_BLOCK), "TOKEN", (2 * (10^0)), "")
-	game_dataHandler_registerShopData("BLOCKS", 32, game_displayHandler_rawItemTypeLabel(16 of CHISELLED_QUARTZ_BLOCK), "TOKEN", (4 * (10^0)), "")
-	game_dataHandler_registerShopData("BLOCKS", 33, game_displayHandler_rawItemTypeLabel(16 of QUARTZ_BLOCK:2), "TOKEN", (6 * (10^0)), "")
+	loop 2 times:
+		set {_shopItemIndex} to (30 + loop-number)
+		set {_shopItem} to 161:0
+		set {_shopItem}'s durability to (loop-number - 1)
+		game_dataHandler_registerShopData("BLOCKS", {_shopItemIndex}, game_displayHandler_rawItemTypeLabel(16 of {_shopItem}), "BALANCE", (10 * (10^3)), "")
+	game_dataHandler_registerShopData("BLOCKS", 33, game_displayHandler_rawItemTypeLabel(16 of QUARTZ_BLOCK), "TOKEN", (2 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 34, game_displayHandler_rawItemTypeLabel(16 of CHISELLED_QUARTZ_BLOCK), "TOKEN", (4 * (10^0)), "")
+	game_dataHandler_registerShopData("BLOCKS", 35, game_displayHandler_rawItemTypeLabel(16 of QUARTZ_BLOCK:2), "TOKEN", (6 * (10^0)), "")
 	game_dataHandler_registerShopData("MISCELLANEOUS", 1, game_displayHandler_rawItemTypeLabel(1 of WATER_BUCKET), "BALANCE", (100 * (10^0)), "")
 	game_dataHandler_registerShopData("MISCELLANEOUS", 2, game_displayHandler_rawItemTypeLabel(1 of HOPPER), "BALANCE", (50 * (10^3)), "")
 #	game_dataHandler_registerShopData("MISCELLANEOUS", 3, game_displayHandler_rawItemTypeLabel(8 of SIGN_ITEM), "BALANCE", (1 * (10^3)), "")
@@ -432,6 +437,14 @@ function game_dataHandler_updateLevelRewardData(loadThread: text):
 		game_dataHandler_registerLevelReward(({_baseLevel} + 10), "GENERATOR_ENHANCER_ITEM:1:5:1")
 
 		wait 2 ticks
+
+	loop ((300 - 80) / 5) times:
+
+		set {_loopLevel} to (80 + (loop-number * 5))
+		game_dataHandler_registerLevelReward({_loopLevel}, "CRATE_KEY_ITEM:EPIC_CRATE:1")
+
+		if floor(loop-number / 10) is (loop-number / 10):
+			wait 2 ticks
 
 	game_threadHandler_updateThread({_loadThread}, "LOADED")
 

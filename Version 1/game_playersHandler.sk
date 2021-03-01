@@ -8,7 +8,7 @@ function game_playersHandler_getPlayerDisplayName(player: offline player, groupD
 
 function game_playersHandler_getPlayerLevelDisplay(player: offline player) :: text:
 	set {_playerLevel} to game_playersHandler_getPlayerLevel({_player})
-	set {_playerLevelColor::*} to "&7" and "&a" and "&e" and "&c"
+	set {_playerLevelColor::*} to "&7" and "&a" and "&e" and "&c" and "&d"
 	set {_playerLevelColorIndex} to (floor({_playerLevel} / 50) + 1)
 	if {_playerLevelColorIndex} > (amount of {_playerLevelColor::*}):
 		set {_playerLevelColorIndex} to (amount of {_playerLevelColor::*})

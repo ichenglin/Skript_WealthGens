@@ -695,7 +695,9 @@ command /auction [<text>] [<number>] [<number>] [<number>] [<text>]:
 			if {_currentMinimumBid} > {_bidAmount}:
 				send "&cYou need to bid at least $%{_currentMinimumBid}%!" to executor
 				stop
-			if game_playersHandler_getPlayerBalance(executor) < {_bidAmount}:
+			set {_playerBalance} to game_playersHandler_getPlayerBalance(executor)
+			set {_playerLastBid} to game_auctionHandler_getPlayerLastBidAmount((executor's UUID))
+			if ({_playerBalance} + {_playerLastBid}) < {_bidAmount}:
 				send "&cYou don't have enough balance to bid $%{_bidAmount}% on auction!" to executor
 				stop
 			game_auctionHandler_playerBid(executor, {_bidAmount})
@@ -794,6 +796,23 @@ command /wgvote [<text>]:
 		game_cooldownHandler_newCooldown("%executor's UUID%_COMMANDS")
 		send "&bVote for the server with link <url:https://playerservers.com/server/WealthGens>&fhttps://playerservers.com/server/WealthGens<reset>&b!"
 
+command /watchdogReport [<offline player>] [<text>]:
+	trigger:
+		if arg 1 is not set:
+			send "&cUsage: /watchdogReport <player>" to executor
+			stop
+		if arg 1 is not online:
+			send "&cThe player is not online!" to executor
+			stop
+		if game_cooldownHandler_checkCooldownReady("%executor's UUID%_WATCHDOG_REPORT", (1 minute)) is false:
+			send "&cPlease wait 1 minute before you report another player!" to executor
+			stop
+		game_cooldownHandler_newCooldown("%executor's UUID%_WATCHDOG_REPORT")
+		set {_reportedPlayerUUID} to (arg 1's UUID)
+		set {-game_eventHandler::WATCHDOG_PLAYER_REPORTED::%{_reportedPlayerUUID}%} to (check [{-game_eventHandler::WATCHDOG_PLAYER_REPORTED::%{_reportedPlayerUUID}%} is set] ? {-game_eventHandler::WATCHDOG_PLAYER_REPORTED::%{_reportedPlayerUUID}%} : 0)
+		add 1 to {-game_eventHandler::WATCHDOG_PLAYER_REPORTED::%{_reportedPlayerUUID}%}
+		send "&eYou have reported &f%game_playersHandler_getPlayerDisplayName(arg 1)%&e for reason &fspamming&e!%nl%&eThe player will be punished shortly if the system confirmed the report." to executor
+
 command /announcement [<text>]:
 	trigger:
 		if executor is not a op:
@@ -863,17 +882,7 @@ every 10 seconds:
 
 every 20 seconds:
 	send "&7&oWatch Dog Detection Executed" to all players where [player input is a op]
-	loop {-game_eventHandler::PLAYER_MESSAGES_COUNT::*}:
-		if loop-value >= 5:
-			set {_loopPlayer} to (loop-index parsed as offline player)
-			set {_playerPreviousChatLogSimilarity} to game_watchdogHandler_playerSpamFlag(loop-index)
-#			send "&7&o[WatchDog Log] %{_loopPlayer}% -> %{_playerPreviousChatLogSimilarity}%%%" to all players where [player input is a op]
-			if {_playerPreviousChatLogSimilarity} is true:
-				system_punishmentSystem_registerPunishment({_loopPlayer}, "CONSOLE", "MUTE", "%system_punishmentSystem_textToSeconds(""1H"")%", "WealthGens WatchDog Detection (Spam)")
-				send "&a[WatchDog] Player &f%game_playersHandler_getPlayerDisplayName({_loopPlayer})%&a has been muted for spamming." to all players
-				wait 4 ticks
-		wait 1 tick
-	delete {-game_eventHandler::PLAYER_MESSAGES_COUNT::*}
+	game_watchdogHandler_checkOnlinePlayers()
 
 #every 1 minute:
 #	execute console command "save-all"
@@ -886,7 +895,7 @@ every 2 minutes:
 	game_clearDroppedItemsHandler_clearDroppedItems(30)
 
 every 5 minutes:
-	game_playersHandler_updateTopBalanceList()
+#	game_playersHandler_updateTopBalanceList()
 	set {_randomAnnouncementIndex} to (random integer between 1 and {-game_dataHandler::SERVER_ANNOUNCEMENT_TOTAL})
 	send "&b[Tip] %{-game_dataHandler::SERVER_ANNOUNCEMENT_%{_randomAnnouncementIndex}%}%" to all players
 #	loop all players:
@@ -1269,6 +1278,10 @@ on enchant:
 
 on fish:
 	cancel event
+
+on explosion prime:
+	cancel event
+	kill event-entity
 
 on inventory click:
 	if inventory name of current inventory of player is "&eChest" or "&eTrapped Chest" or "&eHopper" or "container.crafting" or "container.chest":
