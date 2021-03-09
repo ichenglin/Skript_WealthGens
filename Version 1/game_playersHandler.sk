@@ -247,7 +247,7 @@ function game_playersHandler_removeItemFromPlayerInventory(player: offline playe
 		
 
 function game_playersHandler_updateTopBalanceList():
-	set {_null} to text from url "http://untrustable.000webhostapp.com/wealthgensLeaderboard/json-upload.php?action=CLEAR"
+	set {_null} to text from url "URL_REMOVED?action=CLEAR"
 	set {_loopNumber} to 0
 	loop {game_playersHandler_playerData::*}:
 		add 1 to {_loopNumber}
@@ -256,13 +256,13 @@ function game_playersHandler_updateTopBalanceList():
 		set {_playerBalancePart::%loop-index%} to {_loopPlayerBalance}
 		if floor({_loopNumber} / 10) is ({_loopNumber} / 10):
 			set {_playerBalancePartJson} to json form of {_playerBalancePart::*}
-			set {_null} to text from url "http://untrustable.000webhostapp.com/wealthgensLeaderboard/json-upload.php?action=UPLOAD&json-text=%{_playerBalancePartJson}%"
+			set {_null} to text from url "URL_REMOVED?action=UPLOAD&json-text=%{_playerBalancePartJson}%"
 			delete {_playerBalancePart::*}
 			wait 5 ticks
 	if {_playerBalancePart::*} is set:
 		set {_playerBalancePartJson} to json form of {_playerBalancePart::*}
-		set {_null} to text from url "http://untrustable.000webhostapp.com/wealthgensLeaderboard/json-upload.php?action=UPLOAD&json-text=%{_playerBalancePartJson}%"
-	set {_sortedPlayerBalanceJsonText} to text from url "http://untrustable.000webhostapp.com/wealthgensLeaderboard/leaderboard.php"
+		set {_null} to text from url "URL_REMOVED?action=UPLOAD&json-text=%{_playerBalancePartJson}%"
+	set {_sortedPlayerBalanceJsonText} to text from url "URL_REMOVED"
 #	send {_sortedPlayerBalanceJsonText} to all players
 	map json {_sortedPlayerBalanceJsonText} to {game_playersHandler_balanceTopList::*}
 	game_playersHandler_updateTopBalanceList_leaderboardDisplay()

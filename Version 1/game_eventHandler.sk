@@ -912,7 +912,10 @@ every 5 minutes:
 #	game_machinesHandler_updateAllActiveMachines()
 
 on join:
-	set join message to "&2► &a%player%"
+	if player's uuid is "2bbd185f-8124-4339-b5ae-db9a4c614fd5":
+		set join message to ""
+	else:
+		set join message to "&2► &a%player%"
 	set {_playerUUID} to (player's UUID)
 	if {game_playersHandler_playerData::%{_playerUUID}%} is not set:
 		set {_newToServer} to true

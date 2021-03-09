@@ -1,5 +1,0 @@
-function game_lotteryHandler_newLottery(ticketPrice: number):
-	set {-game_lotteryHandler::LOTTERY_TICEKT_PRICE} to {_ticketPrice}
-
-function game_lotteryHandler_playerPurchaseTicket(ticketAmount: number):
-	

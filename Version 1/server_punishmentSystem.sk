@@ -37,10 +37,11 @@ command /tempban [<offline player>] [<text>] [<text>]:
 		if {_punishmentLength} is not set:
 			send "&cUsage: /tempban <player> <time> <reason>" to executor
 			stop
+		if system_punishmentSystem_checkPunished((arg 1), "BAN") is true:
+			send "&cThe player is already banned!" to executor
+			stop
 		send "&eYou have temporary banned &6%arg 1% &efor &6%system_punishmentSystem_secondsToTime({_punishmentLength})% &ewith reason &6%arg 3%&e!" to executor
 		system_punishmentSystem_sendPunishmentLog(executor, "&6%{_operator}% &etemporary banned &6%arg 1% &efor &6%system_punishmentSystem_secondsToTime({_punishmentLength})% &ewith reason &6%arg 3%&e!")
-		if system_punishmentSystem_checkPunished((arg 1), "BAN") is true:
-			send "&cThe player is already banned, new punishment will replace previous punishments!" to executor
 		system_punishmentSystem_registerPunishment((arg 1), {_operator}, "BAN", "%{_punishmentLength}%", (arg 3))
 
 command /ban [<offline player>] [<text>]:
@@ -55,11 +56,12 @@ command /ban [<offline player>] [<text>]:
 		if (arg 1's UUID) is {@bypass-uuids}:
 			send "&cYou are not allowed to ban this player!" to executor
 			stop
+		if system_punishmentSystem_checkPunished((arg 1), "BAN") is true:
+			send "&cThe player is already banned!" to executor
+			stop
 		set {_operator} to (check [executor is console] ? "CONSOLE" : executor)
 		send "&eYou have permanently banned &6%arg 1% &ewith reason &6%arg 2%&e!" to executor
 		system_punishmentSystem_sendPunishmentLog(executor, "&6%{_operator}% &epermanently banned &6%arg 1% &ewith reason &6%arg 2%&e!")
-		if system_punishmentSystem_checkPunished((arg 1), "BAN") is true:
-			send "&cThe player is already banned, new punishment will replace previous punishments!" to executor
 		system_punishmentSystem_registerPunishment((arg 1), {_operator}, "BAN", "PERMANENT", (arg 2))
 
 command /mute [<offline player>] [<text>] [<text>]:
@@ -79,10 +81,11 @@ command /mute [<offline player>] [<text>] [<text>]:
 		if {_punishmentLength} is not set:
 			send "&cUsage: /mute <player> <time> <reason>" to executor
 			stop
+		if system_punishmentSystem_checkPunished((arg 1), "MUTE") is true:
+			send "&cThe player is already muted!" to executor
+			stop
 		send "&eYou have temporary muted &6%arg 1% &efor &6%system_punishmentSystem_secondsToTime({_punishmentLength})% &ewith reason &6%arg 3%&e!" to executor
 		system_punishmentSystem_sendPunishmentLog(executor, "&6%{_operator}% &etemporary muted &6%arg 1% &efor &6%system_punishmentSystem_secondsToTime({_punishmentLength})% &ewith reason &6%arg 3%&e!")
-		if system_punishmentSystem_checkPunished((arg 1), "MUTE") is true:
-			send "&cThe player is already muted, new punishment will replace previous punishments!" to executor
 		system_punishmentSystem_registerPunishment((arg 1), {_operator}, "MUTE", "%{_punishmentLength}%", (arg 3))
 
 command /kick [<offline player>] [<text>]:

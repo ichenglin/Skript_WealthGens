@@ -36,9 +36,9 @@ function game_watchdogHandler_playerSpamFlag(playerUUID: text) :: boolean:
 	set {_playerMessageListTextRaw} to join {_playerPreviousChatLog::*} with delimiter ""","""
 	replace " " with "%%20" in {_playerMessageListTextRaw}
 
-	set {_playerPreviousChatLogSimilarityJson} to text from url "http://untrustable.000webhostapp.com/watchdog/textSimilarity.php?texts={""player"":""%{_playerUUID}%"",""texts"":[""%{_playerMessageListTextRaw}%""]}"
+	set {_playerPreviousChatLogSimilarityJson} to text from url "URL_REMOVED?data={""player"":""%{_playerUUID}%"",""messages"":[""%{_playerMessageListTextRaw}%""]}"
 	map json {_playerPreviousChatLogSimilarityJson} to {_playerPreviousChatLogSimilarityReport::*}
 
-	send "&7&o[Watchdog Report] %{_player}% (TS: %{_playerPreviousChatLogSimilarityReport::text-similarity}%%%, SS: %{_playerPreviousChatLogSimilarityReport::structure-similarity}%%%)" to all players where [player input is a op]
+	send "&7&o[Watchdog Report] %{_player}% (TS: %{_playerPreviousChatLogSimilarityReport::text-similarity}%%%, SS: %{_playerPreviousChatLogSimilarityReport::structure-similarity}%%%, RR: %{_playerPreviousChatLogSimilarityReport::repeat-ratio}%%%, RL: %{_playerPreviousChatLogSimilarityReport::repeat-length}%%%)" to all players where [player input is a op]
 
 	return {_playerPreviousChatLogSimilarityReport::spam-detected}
