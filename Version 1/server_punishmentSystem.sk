@@ -14,7 +14,7 @@ options:
 	mute-restriction-check: game_permissionHandler_getPlayerPermission(executor, "PUNISHMENT_SYSTEM_PERMISSION") >= 1
 	kick-restriction-check: game_permissionHandler_getPlayerPermission(executor, "PUNISHMENT_SYSTEM_PERMISSION") >= 1
 	unban-restriction-check: game_permissionHandler_getPlayerPermission(executor, "PUNISHMENT_SYSTEM_PERMISSION") >= 3
-	unmute-restriction-check: game_permissionHandler_getPlayerPermission(executor, "PUNISHMENT_SYSTEM_PERMISSION") >= 3
+	unmute-restriction-check: game_permissionHandler_getPlayerPermission(executor, "PUNISHMENT_SYSTEM_PERMISSION") >= 2
 	history-restriction-check: game_permissionHandler_getPlayerPermission(executor, "PUNISHMENT_SYSTEM_PERMISSION") >= 1
 	punishment-log-permission-check: game_permissionHandler_getPlayerPermission(loop-player, "PUNISHMENT_SYSTEM_PERMISSION") >= 1
 	kick-message: %nl%&f&m+-------&f [WealthGens] &f&m-------+%nl%&eYou are %{_action}% this server!%nl%%nl%&eReason: &f%{_reason}%%nl%&eExpire In: &f%{_expire}%%nl%&f&m+-------&f [WealthGens] &f&m-------+

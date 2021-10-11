@@ -1,0 +1,35 @@
+command /staffPunishments [<text>] [<text>]:
+	trigger:
+		if executor is not a op:
+			send "&cYou are not allowed to use this command!" to executor
+			stop
+		set {_targetPlayer} to ("%arg 1%" parsed as offline player)
+		game_staffHandler_checkOperatorPunishments(({_targetPlayer}'s uuid), executor)
+
+function game_staffHandler_checkOperatorPunishments(operatorUUID: text, executor: offline player):
+	send "&eScanning Through Network Punishments... (Total %amount of {system_punishmentSystem::*}%)" to {_executor}
+	set {_operatorUuidEncoded} to {_operatorUUID}
+	replace all "-" with "\-" in {_operatorUuidEncoded}
+	set {_loopTimes} to 0
+	loop {system_punishmentSystem::*}:
+		add 1 to {_loopTimes}
+		if "%loop-index%" matches "\d{8}_punishment_data":
+			if "%loop-value%" contains "OPERATOR[%{_operatorUuidEncoded}%]":
+				add loop-value to {_punishmentsFromOperator::*}
+		if floor({_loopTimes} / 300) is ({_loopTimes} / 300):
+			wait 1 second
+	send "&eScan Progress Completed, Found %amount of {_punishmentsFromOperator::*}% Results." to {_executor}
+	set {_loopTimes} to 0
+	loop {_punishmentsFromOperator::*}:
+		add 1 to {_loopTimes}
+		set {_punishmentTarget} to ("%stringDatasAPI_getData(loop-value, ""PLAYER"")%" parsed as offline player)
+		set {_punishmentReason} to stringDatasAPI_getData(loop-value, "REASON")
+		set {_punishmentType} to stringDatasAPI_getData(loop-value, "TYPE")
+		set {_punishmentLength} to stringDatasAPI_getData(loop-value, "LENGTH")
+		if {_punishmentLength} is "NULL":
+			set {_punishmentLength} to ""
+		else:
+			set {_punishmentLength} to " %system_punishmentSystem_secondsToTime(({_punishmentLength} parsed as number))%"
+		send "&e##%{_loopTimes}% &f%{_punishmentTarget}%&e: &f%{_punishmentReason}% &e(&f%{_punishmentType}%%{_punishmentLength}%&e)" to {_executor}
+		if floor({_loopTimes} / 25) is ({_loopTimes} / 25):
+			wait 1 second

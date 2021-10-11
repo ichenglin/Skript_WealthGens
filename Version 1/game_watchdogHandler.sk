@@ -26,6 +26,9 @@ function game_watchdogHandler_checkOnlinePlayers():
 
 function game_watchdogHandler_playerSpamFlag(playerUUID: text) :: boolean:
 
+	# checker deleted
+	return false
+
 	set {_player} to ({_playerUUID} parsed as offline player)
 
 	set {_playerPreviousChatLog::*} to game_playerLogHandler_getPlayerLatestLog({_playerUUID}, "CHAT", 5)

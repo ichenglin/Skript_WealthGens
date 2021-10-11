@@ -1,0 +1,82 @@
+function game_topBalanceHandler_updateAllPlayersBalanceGroup():
+	set {_loopPlayerIndex} to 0
+	set {_totalSortAmount} to (amount of {game_playersHandler_playerData::*})
+	loop {game_playersHandler_playerData::*}:
+		add 1 to {_loopPlayerIndex}
+		set {_loopPlayerUUID} to loop-index
+		if {-game_topBalanceHandler_playerTopBalanceGroup::%{_loopPlayerUUID}%} is not set:
+			set {_loopPlayerBalance} to (stringDatasAPI_getData({game_playersHandler_playerData::%{_loopPlayerUUID}%}, "BALANCE") parsed as number)
+			game_topBalanceHandler_updatePlayerBalanceGroup({_loopPlayerUUID}, {_loopPlayerBalance})
+#			set {_loopPlayerBalanceGroup} to floor(log({_loopPlayerBalance}, 5))
+#			set {-game_topBalanceHandler_playerTopBalanceGroup::%{_loopPlayerUUID}%} to {_loopPlayerBalanceGroup}
+		if floor({_loopPlayerIndex} / 100) is ({_loopPlayerIndex} / 100):
+			wait 1 second
+			send "&7Balance Leaderboard Sorting Progress: %floor({_loopPlayerIndex} / {_totalSortAmount} * 100)%%%" to all players where [player input is a op]
+	send "&7Balance Leaderboard Sorting Completed." to all players where [player input is a op]
+
+function game_topBalanceHandler_updatePlayerBalanceGroup(playerUUID: text, newBalance: number):
+	if {_newBalance} <= 0:
+		set {-game_topBalanceHandler_playerTopBalanceGroup::%{_playerUUID}%} to 0
+		set {-game_topBalanceHandler_playerTopBalanceAmount::%{_playerUUID}%} to 0
+		stop
+	set {_playerBalanceGroup} to floor(log({_newBalance}, 5))
+	set {-game_topBalanceHandler_playerTopBalanceGroup::%{_playerUUID}%} to {_playerBalanceGroup}
+	set {-game_topBalanceHandler_playerTopBalanceAmount::%{_playerUUID}%} to {_newBalance}
+#	if abs({_playerBalanceGroup}) >= 100:
+#		send "%{_playerUUID}% -> %{_newBalance}%" to all players where [player input is a op]
+
+function game_topBalanceHandler_updateTopBalanceLeaderboard():
+	set {_amount} to 10
+	set {_topBalanceGroup} to 0
+	set {_loopAmount} to 0
+	set {_remainAmount} to {_amount}
+	loop {-game_topBalanceHandler_playerTopBalanceGroup::*}:
+		add 1 to {_loopAmount}
+		set {_loopPlayerUUID} to loop-index
+		set {_loopPlayerBalanceGroup} to loop-value
+		set {_balanceGroupPlayers::%{_loopPlayerBalanceGroup}%} to (check [{_balanceGroupPlayers::%{_loopPlayerBalanceGroup}%} is set] ? "%{_balanceGroupPlayers::%{_loopPlayerBalanceGroup}%}%:%{_loopPlayerUUID}%" : {_loopPlayerUUID})
+		set {_topBalanceGroup} to (check [{_loopPlayerBalanceGroup} > {_topBalanceGroup}] ? {_loopPlayerBalanceGroup} : {_topBalanceGroup})
+#		if abs({_topBalanceGroup}) > 10:
+#			send "%{_loopPlayerUUID}% -> %{_loopPlayerBalanceGroup}%" to all players where [player input is a op]
+		if floor({_loopAmount} / 100) is ({_loopAmount} / 100):
+			wait 1 second
+#			send "&7[Leaderboard Update] Initial Stage %({_loopAmount} / 100)% Completed." to all players where [player input is a op]
+#			if {_loopAmount} >= 1000:
+#				exit 1 loop
+#	send "DEBUG: %{_topBalanceGroup}% (1)" to all players where [player input is a op]
+	loop ({_topBalanceGroup} + 1) times:
+		set {_loopTopBalanceGroup} to ({_topBalanceGroup} - (loop-number) + 1)
+		if {_balanceGroupPlayers::%{_loopTopBalanceGroup}%} is set:
+			set {_loopTopBalanceGroupPlayers::*} to {_balanceGroupPlayers::%{_loopTopBalanceGroup}%} split by ":"
+			add {_loopTopBalanceGroupPlayers::*} to {_topBalancePlayers::*}
+			remove (amount of {_loopTopBalanceGroupPlayers::*}) from {_remainAmount}
+			if {_remainAmount} <= 0:
+				exit 1 loop
+#			wait 1 second
+		if floor(loop-number / 100) is (loop-number / 100):
+			wait 1 second
+#	send "DEBUG: %{_amount}% -> %{_topBalancePlayers::*}% (2)" to all players where [player input is a op]
+	loop {_amount} times:
+#		send "&7[Leaderboard Update] Loop: %loop-number%" to all players where [player input is a op]
+		set {_loopTopBalancePlayerUUID} to ""
+		set {_loopTopBalancePlayerListIndex} to (-1)
+		set {_loopTopBalancePlayerBalance} to (-1)
+		loop {_topBalancePlayers::*}:
+			if {-game_topBalanceHandler_playerTopBalanceAmount::%loop-value-2%} > {_loopTopBalancePlayerBalance}:
+				set {_loopTopBalancePlayerUUID} to loop-value-2
+				set {_loopTopBalancePlayerListIndex} to loop-index
+				set {_loopTopBalancePlayerBalance} to {-game_topBalanceHandler_playerTopBalanceAmount::%loop-value-2%}
+		delete {_topBalancePlayers::%{_loopTopBalancePlayerListIndex}%}
+		add {_loopTopBalancePlayerUUID} to {_finalTopBalancePlayers::*}
+#		send "&7[Leaderboard Update] Sorting Stage %loop-number% Completed." to all players where [player input is a op]
+	delete {game_playersHandler_balanceTopList::*}
+	delete {game_playersHandler_balanceTopPlayer::*}
+	loop (amount of {_finalTopBalancePlayers::*}) times:
+		set {_loopPlayerUUID} to {_finalTopBalancePlayers::%loop-number%}
+		set {_loopPlayer} to ({_loopPlayerUUID} parsed as offline player)
+		set {_loopPlayerBalance} to {-game_topBalanceHandler_playerTopBalanceAmount::%{_loopPlayerUUID}%}
+		add "&b##%loop-number% &f%game_playersHandler_getPlayerDisplayName({_loopPlayer}, true)% &b► &f$%game_displayHandler_getNumberDigitDisplay({_loopPlayerBalance})% &b(&f$%game_displayHandler_getNumberSimplifiedDisplay({_loopPlayerBalance})%&b)" to {_leaderboardDisplay::*}
+		set {game_playersHandler_balanceTopList::%loop-number%} to {_loopPlayerUUID}
+		set {game_playersHandler_balanceTopPlayer::%{_loopPlayerUUID}%} to loop-number
+	game_leaderboardHandler_updateLeaderboard("BALANCE_LEADERBOARD", "Top Balance Players", {_leaderboardDisplay::*})
+	send "&bTop balance leaderboard has been updated!" to all players

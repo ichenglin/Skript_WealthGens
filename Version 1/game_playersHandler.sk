@@ -32,6 +32,7 @@ function game_playersHandler_setPlayerBalance(player: offline player, newBalance
 		if {_balanceChange} > 0:
 			set {_playerBalanceChangeDisplay} to (check [{_newBalance} > {_oldBalance}] ? "+%game_displayHandler_getNumberDigitDisplay({_balanceChange})%" : "-%game_displayHandler_getNumberDigitDisplay({_balanceChange})%")
 			send "&e%{_playerBalanceChangeDisplay}% Balance" to {_player}
+	game_topBalanceHandler_updatePlayerBalanceGroup({_playerUUID}, {_newBalance})
 	if {_updateDisplay} is true:
 		game_playersHandler_updatePlayerTablist({_player})
 		game_playersHandler_updatePlayerSidebar({_player})
@@ -245,28 +246,30 @@ function game_playersHandler_removeItemFromPlayerInventory(player: offline playe
 	set slot {_targetItemFoundInventorySlots::%{_targetItemFoundSlotsAmount}%} of {_player}'s inventory to ({_lasttargetItemFoundSlotRemainItemAmount} of {_item})
 	return true
 		
-
-function game_playersHandler_updateTopBalanceList():
-	set {_null} to text from url "URL_REMOVED?action=CLEAR"
-	set {_loopNumber} to 0
-	loop {game_playersHandler_playerData::*}:
-		add 1 to {_loopNumber}
-		set {_loopPlayer} to (loop-index parsed as offline player)
-		set {_loopPlayerBalance} to game_playersHandler_getPlayerBalance({_loopPlayer})
-		set {_playerBalancePart::%loop-index%} to {_loopPlayerBalance}
-		if floor({_loopNumber} / 10) is ({_loopNumber} / 10):
-			set {_playerBalancePartJson} to json form of {_playerBalancePart::*}
-			set {_null} to text from url "URL_REMOVED?action=UPLOAD&json-text=%{_playerBalancePartJson}%"
-			delete {_playerBalancePart::*}
-			wait 5 ticks
-	if {_playerBalancePart::*} is set:
-		set {_playerBalancePartJson} to json form of {_playerBalancePart::*}
-		set {_null} to text from url "URL_REMOVED?action=UPLOAD&json-text=%{_playerBalancePartJson}%"
-	set {_sortedPlayerBalanceJsonText} to text from url "URL_REMOVED"
-#	send {_sortedPlayerBalanceJsonText} to all players
-	map json {_sortedPlayerBalanceJsonText} to {game_playersHandler_balanceTopList::*}
-	game_playersHandler_updateTopBalanceList_leaderboardDisplay()
-	send "&bTop balance leaderboard has been updated!" to all players
+#
+# This is the old method I used to sort leaderboard,
+# which has already been replaced by a new method.
+#
+#function game_playersHandler_updateTopBalanceList():
+#	set {_null} to text from url "URL_REMOVED"
+#	set {_loopNumber} to 0
+#	loop {game_playersHandler_playerData::*}:
+#		add 1 to {_loopNumber}
+#		set {_loopPlayer} to (loop-index parsed as offline player)
+#		set {_loopPlayerBalance} to game_playersHandler_getPlayerBalance({_loopPlayer})
+#		set {_playerBalancePart::%loop-index%} to {_loopPlayerBalance}
+#		if floor({_loopNumber} / 10) is ({_loopNumber} / 10):
+#			set {_playerBalancePartJson} to json form of {_playerBalancePart::*}
+#			set {_null} to text from url "URL_REMOVED"
+#			delete {_playerBalancePart::*}
+#			wait 5 ticks
+#	if {_playerBalancePart::*} is set:
+#		set {_playerBalancePartJson} to json form of {_playerBalancePart::*}
+#		set {_null} to text from url "URL_REMOVED"
+#	set {_sortedPlayerBalanceJsonText} to text from url "URL_REMOVED"
+#	map json {_sortedPlayerBalanceJsonText} to {game_playersHandler_balanceTopList::*}
+#	game_playersHandler_updateTopBalanceList_leaderboardDisplay()
+#	send "&bTop balance leaderboard has been updated!" to all players
 
 function game_playersHandler_updateTopBalanceList_leaderboardDisplay():
 	loop 10 times:

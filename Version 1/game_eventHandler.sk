@@ -896,6 +896,7 @@ every 2 minutes:
 
 every 5 minutes:
 #	game_playersHandler_updateTopBalanceList()
+	game_topBalanceHandler_updateTopBalanceLeaderboard()
 	set {_randomAnnouncementIndex} to (random integer between 1 and {-game_dataHandler::SERVER_ANNOUNCEMENT_TOTAL})
 	send "&b[Tip] %{-game_dataHandler::SERVER_ANNOUNCEMENT_%{_randomAnnouncementIndex}%}%" to all players
 #	loop all players:
@@ -906,13 +907,15 @@ every 5 minutes:
 #	game_generatorsHandler_updateAllActiveGenerators()
 #	game_machinesHandler_updateAllActiveMachines()
 
-#on script load:
+on script load:
 #	wait 5 ticks
+	wait 5 seconds
+	game_topBalanceHandler_updateAllPlayersBalanceGroup()
 #	game_generatorsHandler_updateAllActiveGenerators()
 #	game_machinesHandler_updateAllActiveMachines()
 
 on join:
-	if player's uuid is "2bbd185f-8124-4339-b5ae-db9a4c614fd5":
+	if player's uuid is "2bbd185f-8124-4339-b5ae-db9a4c614fd5" or "a8939931-74ed-40dc-b8e0-925cdd47eb17":
 		set join message to ""
 	else:
 		set join message to "&2► &a%player%"
@@ -1006,7 +1009,8 @@ on chat:
 			stop
 		delete {-game_groupsHandler::GROUP_CHAT_%{_playerUUID}%}
 		send "&eYour group chat has been &cdisabled &edue to you are no longer in a group!" to player
-	set chat format to "%game_playersHandler_getPlayerLevelDisplay(player)% %game_playersHandler_getPlayerDisplayName(player)% &f%{_playerMessage}%"
+	set {_playerTopBalanceLeaderboardRank} to (check [{game_playersHandler_balanceTopPlayer::%{_playerUUID}%} is set] ? " &6[##%{game_playersHandler_balanceTopPlayer::%{_playerUUID}%}%✯]" : "")
+	set chat format to "%game_playersHandler_getPlayerLevelDisplay(player)% %game_playersHandler_getPlayerDisplayName(player)%%{_playerTopBalanceLeaderboardRank}% &f%{_playerMessage}%"
 	game_playerLogHandler_newLog({_playerUUID}, "CHAT", message)
 	if {-game_eventHandler::PLAYER_MESSAGES_COUNT::%{_playerUUID}%} is not set:
 		set {-game_eventHandler::PLAYER_MESSAGES_COUNT::%{_playerUUID}%} to 0
@@ -1144,7 +1148,10 @@ on rightclick:
 	set {_targetBlock} to (clicked block)
 	set {_playerUUID} to (player's UUID)
 	set {_playerToolData::*} to game_generatorsHandler_getItemData({_playerTool}, "Type")
-	if {_playerToolData::1} is "Token Voucher":
+	if {_playerToolData::1} is "Exclusive":
+		cancel event
+		stop
+	else if {_playerToolData::1} is "Token Voucher":
 		set {_sellwandData::*} to game_generatorsHandler_getItemData({_playerTool}, "Tokens")
 		set {_voucherAmount} to ({_sellwandData::1} parsed as number)
 		if game_playersHandler_removeItemFromPlayerInventory(player, (1 of {_playerTool})) is false:
